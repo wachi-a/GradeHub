@@ -71,8 +71,6 @@ function Header({ page, onPage, onExport, onImport, user, syncStatus, onLogin, o
       </nav>
       <div className="header-tools">
         <AccountHeader user={user} syncStatus={syncStatus} onLogin={onLogin} onLogout={onLogout} onRefresh={onRefresh}/>
-        <button className="header-icon-btn" type="button" title="สำรองข้อมูลเป็น JSON" aria-label="สำรองข้อมูล" onClick={onExport}><Download size={19}/></button>
-        <button className="header-icon-btn" type="button" title="นำเข้าข้อมูลสำรอง" aria-label="นำเข้าข้อมูล" onClick={onImport}><Upload size={19}/></button>
         <button type="button" aria-label="เปิดเมนู" className="header-icon-btn menu-btn" onClick={() => setShowMobile(x => !x)}>{showMobile ? <X size={22}/> : <Menu size={22}/>}</button>
       </div>
     </div>
