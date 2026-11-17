@@ -59,7 +59,7 @@ export function createYear(number) {
 }
 
 export function createSemester(number, status = 'planned') {
-  return { id: uid(), number: Number(number), status, courses: [] };
+  return { id: uid(), number: Number(number), status, includeInGpa: true, courses: [] };
 }
 
 export function createCourse({ name, code = '', credits, maxScore = 100, gradingMode = 'automatic', manualGrade = 'A', groupGrade = '', groupCutoffA = '', groupCutoffF = '', classMeanGpa = '', groupStats = null, scale = DEFAULT_SCALE, bonusBreakdown = '', bonusPoints = '' }) {
@@ -127,7 +127,7 @@ export function semesterStats(semester) {
 
 /** Year GPA is weighted by graded credits across the year's semesters, not a mean of term GPAs. */
 export function yearStats(year) {
-  const terms = (year?.semesters ?? []).map(semesterStats);
+  const terms = (year?.semesters ?? []).filter(semester => semester.includeInGpa !== false).map(semesterStats);
   const gradedCredits = terms.reduce((sum, term) => sum + term.gradedCredits, 0);
   const weighted = terms.reduce((sum, term) => sum + term.weighted, 0);
   return { gradedCredits, weighted, gpa: gradedCredits ? weighted / gradedCredits : null };
@@ -142,12 +142,14 @@ export function allSemesters(data) {
 export function cumulativeStats(data) {
   const terms = allSemesters(data);
   const stats = terms.map(({ semester }) => semesterStats(semester));
-  const gradedCredits = stats.reduce((sum, x) => sum + x.gradedCredits, 0);
-  const weighted = stats.reduce((sum, x) => sum + x.weighted, 0);
+  const includedTerms = terms.filter(({ semester }) => semester.includeInGpa !== false);
+  const includedStats = includedTerms.map(({ semester }) => semesterStats(semester));
+  const gradedCredits = includedStats.reduce((sum, x) => sum + x.gradedCredits, 0);
+  const weighted = includedStats.reduce((sum, x) => sum + x.weighted, 0);
   return {
     gpa: gradedCredits ? weighted / gradedCredits : null,
     gradedCredits,
-    passedCredits: terms.reduce((sum, {semester}) => sum + semester.courses.reduce((acc,c) => { const evaled=evaluateCourse(c); return acc + (evaled.isFinal && evaled.grade !== 'F' ? Number(c.credits) : 0); }, 0), 0),
+    passedCredits: includedTerms.reduce((sum, {semester}) => sum + semester.courses.reduce((acc,c) => { const evaled=evaluateCourse(c); return acc + (evaled.isFinal && evaled.grade !== 'F' ? Number(c.credits) : 0); }, 0), 0),
     credits: stats.reduce((sum, x) => sum + x.credits, 0),
     weighted,
     passed: stats.reduce((sum, x) => sum + x.passed, 0),
