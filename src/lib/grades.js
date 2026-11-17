@@ -149,7 +149,7 @@ export function cumulativeStats(data) {
   return {
     gpa: gradedCredits ? weighted / gradedCredits : null,
     gradedCredits,
-    passedCredits: includedTerms.reduce((sum, {semester}) => sum + semester.courses.reduce((acc,c) => { const evaled=evaluateCourse(c); return acc + (evaled.isFinal && evaled.grade !== 'F' ? Number(c.credits) : 0); }, 0), 0),
+    passedCredits: terms.reduce((sum, {semester}) => sum + semester.courses.reduce((acc,c) => { const evaled=evaluateCourse(c); return acc + (evaled.isFinal && evaled.grade !== 'F' ? Number(c.credits) : 0); }, 0), 0),
     credits: stats.reduce((sum, x) => sum + x.credits, 0),
     weighted,
     passed: stats.reduce((sum, x) => sum + x.passed, 0),
