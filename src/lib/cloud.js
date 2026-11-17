@@ -1,12 +1,12 @@
 /**
- * Cloud persistence for GradeHub.
+ * Cloud persistence for Gradeculator.
  * No Supabase project secrets belong here. The publishable/anon key is designed
  * to be shipped with browser clients; RLS is the actual access boundary.
  */
 import { createClient } from '@supabase/supabase-js';
 import { createEmptyData } from './grades.js';
 import { normalizeData, isValidData, STORAGE_KEY } from './storage.js';
-import { hasAnyGradeHubData } from './calculator.js';
+import { hasAnyGradeculatorData } from './calculator.js';
 
 const url = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
 const publishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '').trim();
@@ -17,7 +17,7 @@ export const supabase = cloudConfigured
   : null;
 export const ENTRY_KEY = 'gradehub.entry.mode.v1';
 
-export const hasAnyData = hasAnyGradeHubData;
+export const hasAnyData = hasAnyGradeculatorData;
 export const cacheKey = id => `gradehub.account.cache.v1.${id}`;
 
 export function loadCloudCache(userId) {
@@ -26,7 +26,7 @@ export function loadCloudCache(userId) {
     const saved = JSON.parse(localStorage.getItem(cacheKey(userId)) || 'null');
     if (!saved || !isValidData(saved.data)) return null;
     return { data: normalizeData(saved.data), revision: saved.revision ?? null, pending: Boolean(saved.pending) };
-  } catch (error) { console.error('GradeHub cached account read failed', error); return null; }
+  } catch (error) { console.error('Gradeculator cached account read failed', error); return null; }
 }
 
 export function saveCloudCache(userId, data, revision, pending) {
@@ -48,7 +48,7 @@ export async function readCloud(userId) {
     .select('document, revision').eq('user_id', userId).maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  if (!isValidData(data.document)) throw new Error('ข้อมูลออนไลน์ไม่ใช่เอกสาร GradeHub ที่รองรับ กรุณาสำรองและตรวจสอบข้อมูล');
+  if (!isValidData(data.document)) throw new Error('ข้อมูลออนไลน์ไม่ใช่เอกสาร Gradeculator ที่รองรับ กรุณาสำรองและตรวจสอบข้อมูล');
   return { data: normalizeData(data.document), revision: Number(data.revision) };
 }
 
