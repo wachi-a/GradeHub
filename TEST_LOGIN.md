@@ -1,4 +1,4 @@
-# GradeHub v1.7 — เช็กลิสต์ทดสอบ Guest → Login → Sync
+# Gradeculator v1.7 — เช็กลิสต์ทดสอบ Guest → Login → Sync
 
 > ตั้งค่า Supabase ตาม `SETUP_LOGIN.md` และสำรองคะแนน JSON ก่อนเสมอ
 
