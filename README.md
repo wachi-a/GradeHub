@@ -1,9 +1,9 @@
-# GradeHub v1.8 — Calculator + GPA Sandbox (ต่อจาก v1.7)
+# Gradeculator v1.8 — Calculator + GPA Sandbox (ต่อจาก v1.7)
 
 เวอร์ชันนี้เปลี่ยนเมนู **Destination → Calculator** โดย **คงระบบคำนวณ GPA เป้าหมายเดิมไว้ทั้งหมด** และเพิ่มส่วน **ทดลองคำนวณ GPA รายวิชา** แยกจาก Courses และ Dashboard
 
 - กรอกชื่อวิชา, หน่วยกิต และคะแนน (เต็ม 100) โดยเพิ่ม/ลบรายการได้
-- ใช้เกณฑ์มาตรฐาน GradeHub A=80, B+=75, B=70, C+=65, C=60, D+=55, D=50, F<50 และคำนวณ GPA แบบถ่วงน้ำหนักหน่วยกิต
+- ใช้เกณฑ์มาตรฐาน Gradeculator A=80, B+=75, B=70, C+=65, C=60, D+=55, D=50, F<50 และคำนวณ GPA แบบถ่วงน้ำหนักหน่วยกิต
 - แถวที่กรอกไม่ครบหรือไม่ผ่านการตรวจข้อมูลจะไม่นำไปคำนวณ (แสดงจำนวนวิชาที่นำมาคิด)
 - ปุ่ม **ล้างข้อมูล** อยู่มุมล่างขวา พร้อมหน้าต่างยืนยัน ล้างเฉพาะวิชาทดลอง ไม่แตะ Courses
 - ข้อมูล Calculator จะ **บันทึกอัตโนมัติ** ใน Guest บน LocalStorage และเป็นส่วนหนึ่งของ Cloud document เมื่อ Login (หลังเชื่อม Supabase ตาม `SETUP_LOGIN.md` แล้ว)
@@ -18,7 +18,7 @@
 
 ---
 
-# GradeHub v1.7 — Guest + Account Sync
+# Gradeculator v1.7 — Guest + Account Sync
 
 เวอร์ชันต่อจาก v1.6.2 เพิ่มหน้า Login / สมัครสมาชิก / ใช้งานแบบ Guest และระบบซิงก์ข้อมูลผ่าน Supabase พร้อม RLS, autosave, LocalStorage สำรอง และแจ้งเตือนกรณีแก้ไขข้อมูลชนกัน **เมื่อ Login ข้อมูล Guest จะถูกย้ายและรวมกับบัญชีให้อัตโนมัติ ไม่ต้องกดเลือกข้อมูลและไม่ล้าง Guest จนกว่าซิงก์สำเร็จ**
 
@@ -34,7 +34,7 @@
 
 ## ข้อมูลเวอร์ชันก่อน
 
-# GradeHub v1.6.1 — รายละเอียดการสอบแบบพับ/ขยาย
+# Gradeculator v1.6.1 — รายละเอียดการสอบแบบพับ/ขยาย
 
 - ใต้ชื่อ **Midterm** และ **Final** ของทุกวิธีตัดเกรด มีปุ่ม **รายละเอียดการสอบ** พร้อมลูกศร
 - กดเพื่อแสดงหรือซ่อน **Min, Max, Avg, Std, N** ของแต่ละรายการแยกจากกัน ค่าเริ่มต้นจะซ่อน
@@ -44,7 +44,7 @@
 
 ---
 
-## GradeHub v1.6 — Changes from v1.5
+## Gradeculator v1.6 — Changes from v1.5
 
 - Show **GPA for each academic year** next to the year folder controls, weighted by credits with published grades only.
 - Course editor (group/curve grading): rename grade selector to **เกรดที่กำหนด**, hide the **GPA เฉลี่ยของห้อง** field, and retain that value internally when updating older course records.
@@ -52,9 +52,9 @@
 - Optional exam statistics do not alter score totals, published grades, or GPA.
 - No localStorage key or data schema breaking changes (`gradehub.mobile.v1`). Back up JSON before updating and use the same browser/origin.
 
-# GradeHub — Mobile-ready Web App (v1.5)
+# Gradeculator — Mobile-ready Web App (v1.5)
 
-GradeHub ตัวใหม่ที่ออกแบบหน้าตาตามภาพตัวอย่างของโปรเจกต์เดิม แต่เขียนระบบใหม่ด้วย **React + JavaScript + CSS** ไม่ต้องรัน Python/Flask และยังไม่มีเซิร์ฟเวอร์ฐานข้อมูล
+Gradeculator ตัวใหม่ที่ออกแบบหน้าตาตามภาพตัวอย่างของโปรเจกต์เดิม แต่เขียนระบบใหม่ด้วย **React + JavaScript + CSS** ไม่ต้องรัน Python/Flask และยังไม่มีเซิร์ฟเวอร์ฐานข้อมูล
 
 ## ความสามารถ
 
@@ -69,14 +69,14 @@ GradeHub ตัวใหม่ที่ออกแบบหน้าตาต�
 - Destination: กรอก GPA เป้าหมาย เลือกปี/เทอมอนาคต กำหนดหน่วยกิตประมาณการ 18–25/เทอม พร้อมสรุปความเป็นไปได้ภายใต้หลักสูตร 129 หน่วยกิต
 - บันทึกอัตโนมัติด้วย `localStorage` ในเบราว์เซอร์เดียวกัน และมี **สำรองข้อมูล / กู้คืนข้อมูล JSON**
 - ออกแบบให้ responsive ทั้งหน้าจอคอมและโทรศัพท์ โดยปุ่มเพิ่มเทอม/แก้ไข/ลบปีอยู่แถวเดียวกัน
-- โลโก้ GradeHub รูปหมวกสีขาวบนพื้นน้ำเงิน และตั้งฟอนต์ **Kanit** (ดึงจาก Google Fonts เมื่อมีอินเทอร์เน็ต)
+- โลโก้ Gradeculator รูปหมวกสีขาวบนพื้นน้ำเงิน และตั้งฟอนต์ **Kanit** (ดึงจาก Google Fonts เมื่อมีอินเทอร์เน็ต)
 
 ## ติดตั้งบนคอม
 
 **สิ่งที่ต้องมี:** Node.js รุ่น 20.19+ หรือ 22.12+ และ npm (แนะนำ Node.js 22 LTS)
 
 1. แตกไฟล์ ZIP นี้ไว้บนคอม (อย่าลบโฟลเดอร์ `src`)
-2. เปิดโฟลเดอร์ `GradeHub-Mobile` ด้วย Visual Studio Code (Windows สามารถดับเบิลคลิกไฟล์ `START_GRADEHUB_WINDOWS.bat` แทนขั้นตอน 3–4 ได้ หลังติดตั้ง Node.js)
+2. เปิดโฟลเดอร์ `Gradeculator-Mobile` ด้วย Visual Studio Code (Windows สามารถดับเบิลคลิกไฟล์ `START_GRADEHUB_WINDOWS.bat` แทนขั้นตอน 3–4 ได้ หลังติดตั้ง Node.js)
 3. เปิด Terminal ภายใน VS Code แล้วรัน
 
 ```bash
@@ -100,7 +100,7 @@ npm run build
 
 ```bash
 npm install @capacitor/core @capacitor/cli @capacitor/android
-npx cap init GradeHub com.gradehub.app --web-dir dist
+npx cap init Gradeculator com.gradehub.app --web-dir dist
 npx cap add android
 npm run build
 npx cap sync android
@@ -137,7 +137,7 @@ npm test
 ## โครงสร้างไฟล์
 
 ```text
-GradeHub-Mobile/
+Gradeculator-Mobile/
   index.html
   START_GRADEHUB_WINDOWS.bat
   package.json
@@ -206,7 +206,7 @@ GradeHub-Mobile/
 - เก็บฟิลด์ Bonus แบบ optional เพื่อให้ JSON และ `localStorage` จาก v1.3 หรือเก่ากว่าเปิดได้โดยไม่ต้องแปลงไฟล์
 - เพิ่ม test ครอบคลุมโบนัส, คะแนนเต็ม, คะแนนเก็บที่ยังไม่กรอก และความเข้ากันได้ของไฟล์เก่า
 
-**หมายเหตุ:** Vite จะใช้ port 5173 เท่านั้นเพื่อให้ origin เก็บข้อมูลเดิมเหมือนเดิม หากมีโปรเจกต์ GradeHub รุ่นเก่ารันอยู่ ให้หยุดก่อนเปิดรุ่นใหม่ (ไม่เช่นนั้นจะขึ้นข้อความว่า port ถูกใช้งานอยู่)
+**หมายเหตุ:** Vite จะใช้ port 5173 เท่านั้นเพื่อให้ origin เก็บข้อมูลเดิมเหมือนเดิม หากมีโปรเจกต์ Gradeculator รุ่นเก่ารันอยู่ ให้หยุดก่อนเปิดรุ่นใหม่ (ไม่เช่นนั้นจะขึ้นข้อความว่า port ถูกใช้งานอยู่)
 
 ในเวอร์ชันทดสอบบนคอมนี้ยังใช้ `localStorage` เหมือนเดิม ก่อนวางไฟล์ใหม่ทับโปรเจกต์เดิมให้กด Export JSON สำรองข้อมูลก่อนทุกครั้ง
 
