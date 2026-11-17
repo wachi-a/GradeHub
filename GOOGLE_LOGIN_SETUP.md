@@ -1,11 +1,11 @@
-# GradeHub — Google Login และการเชื่อมบัญชีเดิม
+# Gradeculator — Google Login และการเชื่อมบัญชีเดิม
 
-GradeHub รองรับ **Google OAuth ในแท็บเบราว์เซอร์เดิม** ผ่าน Supabase Auth โดยยังคง Login ด้วยอีเมล/รหัสผ่าน และ Guest ตามเดิม ไม่ต้องตั้ง Custom SMTP สำหรับ Google OAuth
+Gradeculator รองรับ **Google OAuth ในแท็บเบราว์เซอร์เดิม** ผ่าน Supabase Auth โดยยังคง Login ด้วยอีเมล/รหัสผ่าน และ Guest ตามเดิม ไม่ต้องตั้ง Custom SMTP สำหรับ Google OAuth
 
 ## 1. ตั้งค่า Google Cloud
 
-1. เปิด https://console.cloud.google.com/ และสร้างหรือเลือก Project (เช่น GradeHub)
-2. เข้า Google Auth Platform → Branding ตั้งชื่อแอป GradeHub และอีเมลติดต่อ
+1. เปิด https://console.cloud.google.com/ และสร้างหรือเลือก Project (เช่น Gradeculator)
+2. เข้า Google Auth Platform → Branding ตั้งชื่อแอป Gradeculator และอีเมลติดต่อ
 3. เข้า Audience เลือก **External** หากทดสอบสถานะ Testing ให้เพิ่มบัญชี Gmail ที่จะทดลองใน Test users
 4. เข้า Clients → Create client → OAuth client ID → **Web application**
 5. Authorized JavaScript origins: `https://wachi-a.github.io` (ห้ามใส่ /GradeHub/)
@@ -14,7 +14,7 @@ GradeHub รองรับ **Google OAuth ในแท็บเบราว์�
 
 ## 2. ตั้งค่า Supabase
 
-1. Supabase → GradeHub → Authentication → Sign In / Providers → Google → Enable
+1. Supabase → Gradeculator → Authentication → Sign In / Providers → Google → Enable
 2. วาง **Google Client ID** และ **Google Client Secret** จาก Google Cloud ในหน้าตั้งค่าผู้ให้บริการ Google ของ Supabase แล้ว Save
 3. Authentication → URL Configuration:
    - Site URL: `https://wachi-a.github.io/GradeHub/`
@@ -23,8 +23,8 @@ GradeHub รองรับ **Google OAuth ในแท็บเบราว์�
 
 ## 3. ทดสอบแบบรักษาข้อมูลเดิม
 
-- **มีบัญชี Email/Password ที่มีคะแนนอยู่แล้ว:** สำรอง JSON ก่อน → Login ด้วย Email/Password เดิม → รอแสดงสถานะ **ซิงก์แล้ว** → กด **เชื่อม Google** ที่แถบบัญชี → เลือก Google → กลับหน้า GradeHub แล้วตรวจปี/เทอม/วิชา/คะแนนเดิม → Logout → ทดลอง Google Login
-- **ผู้ใช้ใหม่:** เลือก **เข้าสู่ระบบด้วย Google** จากหน้า Login → เลือกบัญชี Google → กลับเข้า GradeHub และเริ่มใช้งาน
+- **มีบัญชี Email/Password ที่มีคะแนนอยู่แล้ว:** สำรอง JSON ก่อน → Login ด้วย Email/Password เดิม → รอแสดงสถานะ **ซิงก์แล้ว** → กด **เชื่อม Google** ที่แถบบัญชี → เลือก Google → กลับหน้า Gradeculator แล้วตรวจปี/เทอม/วิชา/คะแนนเดิม → Logout → ทดลอง Google Login
+- **ผู้ใช้ใหม่:** เลือก **เข้าสู่ระบบด้วย Google** จากหน้า Login → เลือกบัญชี Google → กลับเข้า Gradeculator และเริ่มใช้งาน
 - **Guest:** กด Google Login จากอุปกรณ์ที่มี Guest ระบบย้ายคะแนนเข้าบัญชีตามกลไกเดิม โดยล้าง Guest เฉพาะหลัง Supabase ยืนยันการบันทึกสำเร็จ
 - Supabase สามารถเชื่อม Google กับบัญชีที่ใช้อีเมลเดียวกันและยืนยันแล้วโดยอัตโนมัติได้ แต่ **บัญชี Google ต่างอีเมลต้องเชื่อมจากบัญชีเดิมก่อน** มิฉะนั้นอาจกลายเป็น User ID คนละราย ไม่ใช่ข้อมูลคะแนนเดิม
 - หากยังอยู่ใน Google Auth Platform Testing ให้เพิ่มอีเมลใน Test users ก่อนทดลอง
