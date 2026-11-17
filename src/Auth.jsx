@@ -40,7 +40,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
         }
       } else if (formMode === 'verify-email') {
         if (!pendingEmail) throw new Error('ไม่พบอีเมลที่กำลังยืนยัน กรุณาสมัครสมาชิกใหม่');
-        if (!/^\\d{6,8}$/.test(otp)) throw new Error('กรุณากรอกรหัสตัวเลขจากอีเมลให้ครบ');
+        if (!/^\d{6,8}$/.test(otp)) throw new Error('กรุณากรอกรหัสตัวเลขจากอีเมลให้ครบ');
         const { data, error } = await supabase.auth.verifyOtp({
           email: pendingEmail, token: otp, type: 'email',
         });
@@ -94,7 +94,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
           {formMode === 'verify-email' && <>
             <p className="account-intro">กรอกรหัสที่ส่งไปยัง <strong>{pendingEmail}</strong> ในหน้านี้ได้เลย ไม่ต้องเปิดลิงก์ยืนยันในแท็บใหม่</p>
             <label>รหัส OTP จากอีเมล<input type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" minLength={6} maxLength={8} required
-              placeholder="กรอกรหัสตัวเลข" value={otp} onChange={e=>setOtp(e.target.value.replace(/\\D/g,'').slice(0,8))}/></label>
+              placeholder="กรอกรหัสตัวเลข" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,'').slice(0,8))}/></label>
           </>}
           {(formMode === 'login' || formMode === 'register') && <label>รหัสผ่าน
             <div className="password-row"><input type={showPassword ? 'text' : 'password'} autoComplete={formMode === 'register' ? 'new-password' : 'current-password'} minLength={formMode === 'register' ? 8 : undefined} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={formMode === 'register' ? 'อย่างน้อย 8 ตัวอักษร' : 'รหัสผ่าน'}/><button type="button" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>
