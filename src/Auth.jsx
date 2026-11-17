@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CheckCircle2, Cloud, CloudOff, Eye, EyeOff, GraduationCap, LogIn, LogOut, RefreshCw, ShieldCheck, UserRound, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Cloud, CloudOff, Eye, EyeOff, GraduationCap, LogIn, LogOut, Download, Upload, RefreshCw, ShieldCheck, UserRound, X } from 'lucide-react';
 import { cloudConfigured, supabase } from './lib/cloud.js';
 
 const errorText = error => {
@@ -76,7 +76,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
     } catch (error) { setMessage(errorText(error)); setSuccess(false); }
     finally { setBusy(false); }
   };
-  // Supabase redirects this browser tab to Google and back to GradeHub.
+  // Supabase redirects this browser tab to Google and back to Gradeculator.
   // Existing Guest scores remain stored locally until account migration is confirmed.
   const signInWithGoogle = async () => {
     if (!cloudConfigured || busy) return;
@@ -109,11 +109,11 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
   const switchMode = next => {
     clearCredentials(); setFormMode(next); setMessage(''); setSuccess(false);
   };
-  const title = formMode === 'register' ? 'สร้างบัญชี GradeHub' : formMode === 'verify-email' ? 'ยืนยันอีเมลด้วยรหัส OTP' : formMode === 'forgot' ? 'ลืมรหัสผ่าน?' : formMode === 'reset-password' ? 'ตั้งรหัสผ่านใหม่' : 'เข้าสู่ระบบ GradeHub';
+  const title = formMode === 'register' ? 'สร้างบัญชี Gradeculator' : formMode === 'verify-email' ? 'ยืนยันอีเมลด้วยรหัส OTP' : formMode === 'forgot' ? 'ลืมรหัสผ่าน?' : formMode === 'reset-password' ? 'ตั้งรหัสผ่านใหม่' : 'เข้าสู่ระบบ Gradeculator';
   return <div className={isOverlay ? 'account-modal-backdrop' : 'account-gateway'}>
     <section className="account-card" role={isOverlay ? 'dialog' : 'main'} aria-modal={isOverlay ? 'true' : undefined} aria-label={title}>
       {isOverlay && <button type="button" aria-label="ปิด" className="account-close" onClick={closePanel}><X size={19}/></button>}
-      <div className="account-badge"><GraduationCap size={29}/></div>
+      <div className="account-badge"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="" className="auth-brand-logo"/></div>
       <div className="eyebrow">GRADEHUB ACCOUNT</div>
       <h1>{title}</h1>
       <p className="account-intro">ล็อกอินเพื่อซิงก์ข้อมูลรายวิชาและคะแนนระหว่างเว็บไซต์กับโทรศัพท์ หรือใช้งานแบบ Guest โดยเก็บข้อมูลไว้ในเครื่อง</p>
@@ -162,7 +162,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
 
 export function CloudChoice({ cloudExists, onCloud, onGuest, onLogout, onBackup, isRecovery = false }) {
   return <div className="account-gateway"><section className="account-card decision-card" role="main">
-    <div className="account-badge"><Cloud size={28}/></div>
+    <div className="account-badge"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="" className="auth-brand-logo"/></div>
     <div className="eyebrow">SYNC YOUR GRADEHUB</div>
     <h1>{isRecovery ? 'กู้คืนข้อมูลที่ยังไม่ได้ซิงก์' : 'เลือกข้อมูลที่ต้องการใช้'}</h1>
     <p className="account-intro">{isRecovery ? 'มีข้อมูลบัญชีที่แก้ไขค้างอยู่ในเครื่องนี้และยังไม่ถูกส่งขึ้นออนไลน์ กรุณาเลือกว่าจะใช้ข้อมูลออนไลน์ล่าสุด หรือใช้สำเนาในเครื่องนี้' : 'ในเครื่องนี้มีข้อมูล Guest อยู่แล้ว เลือกว่าจะใช้ข้อมูลบัญชีออนไลน์หรือย้ายข้อมูล Guest ขึ้นบัญชี (ข้อมูลเดิมในเครื่องยังอยู่)'}</p>
@@ -176,7 +176,7 @@ export function CloudChoice({ cloudExists, onCloud, onGuest, onLogout, onBackup,
 
 export function CloudConflict({ onUseCloud, onOverwrite, onLogout, onBackup }) {
   return <div className="account-modal-backdrop"><section className="account-card decision-card" role="dialog" aria-modal="true" aria-label="ข้อมูลออนไลน์เปลี่ยนจากอีกเครื่อง">
-    <div className="account-badge alert"><CloudOff size={28}/></div>
+    <div className="account-badge alert"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="" className="auth-brand-logo"/></div>
     <h1>พบข้อมูลที่แก้ไขจากอีกอุปกรณ์</h1>
     <p className="account-intro">ระบบหยุดการซิงก์เพื่อป้องกันการเขียนทับคะแนนจากอีกเครื่อง ข้อมูลที่กำลังแก้บนเครื่องนี้ยังเก็บไว้เป็นสำเนาเฉพาะบัญชี</p>
     <button className="account-backup-btn" onClick={onBackup}>ดาวน์โหลดข้อมูลเครื่องนี้เป็น JSON ก่อนตัดสินใจ</button>
@@ -186,37 +186,87 @@ export function CloudConflict({ onUseCloud, onOverwrite, onLogout, onBackup }) {
   </section></div>;
 }
 
-export function AccountHeader({ user, syncStatus, onLogin, onLogout, onRefresh }) {
+export function AccountHeader({ user, syncStatus, onLogin, onLogout, onRefresh, onExport, onImport }) {
+  const [open, setOpen] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
+  const [nameBusy, setNameBusy] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || user?.user_metadata?.name || '');
+  const [savedName, setSavedName] = useState('');
+  const menuRef = React.useRef(null);
   const statusLabel = { synced:'ซิงก์แล้ว', syncing:'กำลังซิงก์', pending:'รอซิงก์', offline:'ออฟไลน์', conflict:'ข้อมูลชนกัน' }[syncStatus] || 'ระบบคลาวด์';
   const hasGoogle = Boolean(user?.identities?.some(identity => identity.provider === 'google'));
+  React.useEffect(() => {
+    setDisplayName(user?.user_metadata?.full_name || user?.user_metadata?.name || '');
+    setSavedName('');
+    setOpen(false);
+  }, [user?.id]);
+  React.useEffect(() => {
+    if (!open) return;
+    const onOutside = event => { if (!menuRef.current?.contains(event.target)) setOpen(false); };
+    const onKey = event => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', onOutside);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('pointerdown',onOutside); document.removeEventListener('keydown',onKey); };
+  }, [open]);
+  const saveName = async event => {
+    event.preventDefault();
+    if (!displayName.trim() || nameBusy) return;
+    setNameBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { full_name: displayName.trim() } });
+      if (error) throw error;
+      setSavedName('บันทึกชื่อแล้ว');
+    } catch (error) { setSavedName(errorText(error)); }
+    finally { setNameBusy(false); }
+  };
   const linkGoogle = async () => {
     if (!user || !cloudConfigured || hasGoogle || linkBusy) return;
-    // OAuth navigates away: protect any unsynced marks before leaving this page.
     if (syncStatus !== 'synced') {
-      window.alert('กรุณารอจนขึ้นสถานะ “ซิงก์แล้ว” ก่อนเชื่อม Google เพื่อป้องกันข้อมูลคะแนนที่ยังไม่บันทึก');
+      window.alert('กรุณารอจนขึ้นสถานะ “ซิงก์แล้ว” ก่อนเชื่อม Google');
       return;
     }
     setLinkBusy(true);
     try {
-      const { error } = await supabase.auth.linkIdentity({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
-      });
+      const { error } = await supabase.auth.linkIdentity({ provider: 'google',
+        options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` } });
       if (error) throw error;
     } catch (error) {
-      window.alert('เชื่อมบัญชี Google ไม่สำเร็จ: ' + errorText(error) + '\nหากระบบปิดการเชื่อมบัญชี ให้เปิด Allow manual linking ใน Supabase → Authentication → Settings');
+      window.alert('เชื่อม Google ไม่สำเร็จ: ' + errorText(error));
       setLinkBusy(false);
     }
   };
-  return user ? <div className="account-toolbar">
-    <span className={'sync-indicator ' + (syncStatus||'')} title={statusLabel}>{syncStatus === 'synced' ? <CheckCircle2 size={15}/> : syncStatus === 'syncing' ? <RefreshCw size={15} className="spin-icon"/> : <CloudOff size={15}/>}<span>{statusLabel}</span></span>
-    <button className="account-toolbar-btn" onClick={onRefresh} title="โหลดข้อมูลออนไลน์ล่าสุด" aria-label="รีเฟรชข้อมูล"><RefreshCw size={18}/></button>
-    <span className="account-email" title={user.email}>{user.email}</span>
-    {!hasGoogle && <button className="account-link-google" type="button" disabled={linkBusy}
-      title="เชื่อม Google กับบัญชี GradeHub เดิม" aria-label="เชื่อม Google กับบัญชีเดิม" onClick={linkGoogle}>
-      <span className="account-google-mark" aria-hidden="true">G</span><span className="account-link-google-label">เชื่อม Google</span>
-    </button>}
-    <button className="account-toolbar-btn" onClick={onLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ"><LogOut size={18}/></button>
-  </div> : <button className="btn btn-outline account-login-btn" type="button" onClick={onLogin}><LogIn size={17}/> Login</button>;
+  if (!user) return <button className="btn btn-outline account-login-btn" type="button" onClick={onLogin}><LogIn size={17}/> Login</button>;
+  return <div className="account-menu-wrap" ref={menuRef}>
+    <button type="button" className="account-profile-trigger" title="บัญชีของฉัน"
+      aria-label="เปิดเมนูบัญชี" aria-expanded={open} onClick={() => setOpen(v=>!v)}>
+      <UserRound size={21}/>
+    </button>
+    {open && <div className="account-profile-menu" role="region" aria-label="ข้อมูลบัญชี Gradeculator">
+      <div className="account-profile-heading">
+        <div className="account-profile-avatar"><UserRound size={23}/></div>
+        <div><strong>{displayName.trim() || user?.user_metadata?.full_name || 'บัญชีของฉัน'}</strong>
+          <span>{user.email}</span></div>
+      </div>
+      <form className="account-name-form" onSubmit={saveName}>
+        <label htmlFor="gradeculator-profile-name">ชื่อ–นามสกุล</label>
+        <div><input id="gradeculator-profile-name" type="text" maxLength={80} placeholder="เพิ่มชื่อ–นามสกุล"
+          value={displayName} onChange={e=>{setDisplayName(e.target.value);setSavedName('');}}/>
+          <button type="submit" disabled={nameBusy || !displayName.trim()} title="บันทึกชื่อ">บันทึก</button></div>
+        {savedName && <small role="status">{savedName}</small>}
+      </form>
+      <div className="account-menu-status"><span className={'sync-indicator ' + (syncStatus || '')}>
+        {syncStatus === 'synced' ? <CheckCircle2 size={15}/> : <CloudOff size={15}/>} {statusLabel}
+        </span><button onClick={onRefresh} type="button" title="ซิงก์ข้อมูลอีกครั้ง"><RefreshCw size={17}/> รีเฟรช</button></div>
+      <div className="account-menu-actions">
+        {!hasGoogle && <button type="button" disabled={linkBusy} onClick={linkGoogle}>
+          <span className="account-google-mark" aria-hidden="true">G</span> เชื่อม Google
+        </button>}
+        <button type="button" onClick={()=>{onExport?.();setOpen(false);}}><Download size={17}/>สำรอง JSON</button>
+        <button type="button" disabled={syncStatus !== 'synced'} onClick={()=>{onImport?.();setOpen(false);}}>
+          <Upload size={17}/>นำเข้า JSON ส่วนตัว</button>
+        <button type="button" className="account-menu-logout" onClick={()=>{setOpen(false);onLogout?.();}}>
+          <LogOut size={17}/>ออกจากระบบ</button>
+      </div>
+    </div>}
+  </div>;
 }
