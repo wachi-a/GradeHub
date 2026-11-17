@@ -65,6 +65,22 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
     } catch (error) { setMessage(errorText(error)); setSuccess(false); }
     finally { setBusy(false); }
   };
+  // Supabase redirects this browser tab to Google and back to GradeHub.
+  // Existing Guest scores remain stored locally until account migration is confirmed.
+  const signInWithGoogle = async () => {
+    if (!cloudConfigured || busy) return;
+    setBusy(true); setMessage(''); setSuccess(false);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setMessage(errorText(error)); setSuccess(false);
+      setBusy(false);
+    }
+  };
   const resendCode = async () => {
     if (!cloudConfigured || !pendingEmail || busy) return;
     setBusy(true); setMessage(''); setSuccess(false);
@@ -111,6 +127,13 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
             {formMode === 'login' && <><button type="button" onClick={()=>switchMode('register')}>สมัครสมาชิก</button><button type="button" onClick={()=>switchMode('forgot')}>ลืมรหัสผ่าน</button></>}
           </div>
         </form>}
+      {cloudConfigured && ['login','register','verify-email'].includes(formMode) && <>
+        <div className="account-divider"><span>หรือ</span></div>
+        <button type="button" className="account-google-signin" onClick={signInWithGoogle} disabled={busy}>
+          <span className="account-google-mark" aria-hidden="true">G</span> เข้าสู่ระบบด้วย Google
+        </button>
+        <p className="account-google-help">มีบัญชี GradeHub เดิมที่เก็บคะแนนไว้แล้ว? แนะนำให้เข้าสู่ระบบบัญชีเดิมก่อน แล้วกด “เชื่อม Google” เพื่อใช้ข้อมูลชุดเดิม</p>
+      </>}
       <div className="account-divider"><span>หรือ</span></div>
       <button type="button" className="btn btn-outline account-guest" onClick={onGuest}><UserRound size={18}/>ใช้งานแบบ Guest (ไม่ต้องเข้าสู่ระบบ)</button>
       <p className="account-footnote"><ShieldCheck size={15}/> ข้อมูล Guest จะอยู่ในเครื่องของเบราว์เซอร์นี้เท่านั้น และไม่ซิงก์ข้ามอุปกรณ์</p>
@@ -145,11 +168,36 @@ export function CloudConflict({ onUseCloud, onOverwrite, onLogout, onBackup }) {
 }
 
 export function AccountHeader({ user, syncStatus, onLogin, onLogout, onRefresh }) {
+  const [linkBusy, setLinkBusy] = useState(false);
   const statusLabel = { synced:'ซิงก์แล้ว', syncing:'กำลังซิงก์', pending:'รอซิงก์', offline:'ออฟไลน์', conflict:'ข้อมูลชนกัน' }[syncStatus] || 'ระบบคลาวด์';
+  const hasGoogle = Boolean(user?.identities?.some(identity => identity.provider === 'google'));
+  const linkGoogle = async () => {
+    if (!user || !cloudConfigured || hasGoogle || linkBusy) return;
+    // OAuth navigates away: protect any unsynced marks before leaving this page.
+    if (syncStatus !== 'synced') {
+      window.alert('กรุณารอจนขึ้นสถานะ “ซิงก์แล้ว” ก่อนเชื่อม Google เพื่อป้องกันข้อมูลคะแนนที่ยังไม่บันทึก');
+      return;
+    }
+    setLinkBusy(true);
+    try {
+      const { error } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
+      });
+      if (error) throw error;
+    } catch (error) {
+      window.alert('เชื่อมบัญชี Google ไม่สำเร็จ: ' + errorText(error) + '\nหากระบบปิดการเชื่อมบัญชี ให้เปิด Allow manual linking ใน Supabase → Authentication → Settings');
+      setLinkBusy(false);
+    }
+  };
   return user ? <div className="account-toolbar">
     <span className={'sync-indicator ' + (syncStatus||'')} title={statusLabel}>{syncStatus === 'synced' ? <CheckCircle2 size={15}/> : syncStatus === 'syncing' ? <RefreshCw size={15} className="spin-icon"/> : <CloudOff size={15}/>}<span>{statusLabel}</span></span>
     <button className="account-toolbar-btn" onClick={onRefresh} title="โหลดข้อมูลออนไลน์ล่าสุด" aria-label="รีเฟรชข้อมูล"><RefreshCw size={18}/></button>
     <span className="account-email" title={user.email}>{user.email}</span>
+    {!hasGoogle && <button className="account-link-google" type="button" disabled={linkBusy}
+      title="เชื่อม Google กับบัญชี GradeHub เดิม" aria-label="เชื่อม Google กับบัญชีเดิม" onClick={linkGoogle}>
+      <span className="account-google-mark" aria-hidden="true">G</span><span className="account-link-google-label">เชื่อม Google</span>
+    </button>}
     <button className="account-toolbar-btn" onClick={onLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ"><LogOut size={18}/></button>
   </div> : <button className="btn btn-outline account-login-btn" type="button" onClick={onLogin}><LogIn size={17}/> Login</button>;
 }

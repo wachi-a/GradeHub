@@ -818,3 +818,15 @@ h1,h2,h3,p { margin-top: 0; }
   .sandbox-bottom-actions { flex-direction: column; }
   .sandbox-clear { align-self: flex-end; }
 }
+
+/* Google OAuth buttons: keep the existing GradeHub account UI unchanged. */
+.account-google-signin { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:48px; border:1px solid #dbe2ee; border-radius:10px; background:#fff; color:#263347; font:inherit; font-weight:600; cursor:pointer; }
+.account-google-signin:hover:not(:disabled) { background:#f6f8fc; border-color:#b6c6e4; }
+.account-google-signin:disabled { opacity:.55; cursor:wait; }
+.account-google-mark { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:#f4f7ff; color:#4285f4; font:700 18px Arial,sans-serif; flex-shrink:0; }
+.account-google-help { color:#788599; font-size:11px; line-height:1.6; margin:9px 0 0; }
+.account-link-google { display:inline-flex; gap:4px; align-items:center; border:1px solid #dbe2ee; border-radius:8px; background:#fff; font:inherit; font-size:11px; font-weight:600; min-height:34px; padding:3px 7px; color:#34445d; cursor:pointer; white-space:nowrap; }
+.account-link-google .account-google-mark { width:20px; height:20px; font-size:14px; }
+.account-link-google:hover:not(:disabled) { background:#f2f6fe; }
+.account-link-google:disabled { opacity:.5; cursor:wait; }
+@media (max-width:720px) { .account-link-google { padding:3px; min-width:29px; } .account-link-google-label { display:none; } }
