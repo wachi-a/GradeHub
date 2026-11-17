@@ -55,7 +55,7 @@ function hashRow(row) {
   return hash.toString(36);
 }
 
-/** Absolute score 0–100, GradeHub's default cutoff. Weighted by credits. */
+/** Absolute score 0–100, Gradeculator's default cutoff. Weighted by credits. */
 export function calculateDraftGpa(rows) {
   const details = (rows ?? []).map(row => {
     const name = String(row.name ?? '').trim();
