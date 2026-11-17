@@ -83,7 +83,7 @@ export function useAccountSync(notify) {
       initializeDocument(document, remote?.revision ?? null);
       saveCloudCache(account.id, document, remote?.revision ?? null, false);
     } catch (error) {
-      console.error('Loading GradeHub Cloud failed', error);
+      console.error('Loading Gradeculator Cloud failed', error);
       if (userRef.current?.id !== account.id) return;
       const guest = loadData();
       // Crucially: if Guest data needs moving, do NOT display account data
@@ -171,7 +171,7 @@ export function useAccountSync(notify) {
       setSyncStatus(changedAgain ? 'pending' : 'synced');
       if (changedAgain) retryRef.current = true;
     } catch (error) {
-      console.error('Saving GradeHub Cloud failed', error);
+      console.error('Saving Gradeculator Cloud failed', error);
       saveCloudCache(account.id, dataRef.current, revisionRef.current, true);
       if (modeRef.current === 'cloud') setSyncStatus('offline');
     } finally {
