@@ -83,3 +83,6 @@ export function calculateDraftGpa(rows) {
 export function hasAnyGradeculatorData(document) {
   return Boolean((Array.isArray(document?.years) && document.years.length > 0) || hasCalculatorInputs(document));
 }
+
+// Keep the legacy export for existing extensions/tests and older code.
+export const hasAnyGradeHubData = hasAnyGradeculatorData;
