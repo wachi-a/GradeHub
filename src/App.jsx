@@ -38,19 +38,14 @@ const byId = (data, yid, sid, cid) => {
   return { year, semester, course };
 };
 
-function GradeHubMark() {
-  return <svg viewBox="0 0 40 40" width="27" height="27" role="img" aria-label="หมวกนักศึกษา" focusable="false">
-    <path fill="currentColor" d="M20 8.1 35 14.4 20 20.7 5 14.4 20 8.1Z"/>
-    <path fill="currentColor" d="M10.1 19.7v7.6c6.2 4.2 13.6 4.2 19.8 0v-7.6L20 23.8l-9.9-4.1Z"/>
-    <path d="M8.1 16.2C5.8 18.6 5.7 21 5.7 25.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-    <path fill="currentColor" d="M3.8 25.1h3.9L9 31.7H2.6l1.2-6.6Z"/>
-  </svg>;
+function GradeculatorMark() {
+  return <img className="gradeculator-logo" src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="Gradeculator" draggable="false"/>;
 }
 
 function Brand({ onClick }) {
   return <button type="button" className="brand" onClick={onClick} aria-label="ไป Dashboard">
-    <span className="brand-mark"><GradeHubMark/></span>
-    <span className="brand-name">GradeHub</span>
+    <span className="brand-mark"><GradeculatorMark/></span>
+    <span className="brand-name">Gradeculator</span>
   </button>;
 }
 
@@ -71,7 +66,7 @@ function Header({ page, onPage, onExport, onImport, user, syncStatus, onLogin, o
         </button>)}
       </nav>
       <div className="header-tools">
-        <AccountHeader user={user} syncStatus={syncStatus} onLogin={onLogin} onLogout={onLogout} onRefresh={onRefresh}/>
+        <AccountHeader user={user} syncStatus={syncStatus} onLogin={onLogin} onLogout={onLogout} onRefresh={onRefresh} onExport={onExport} onImport={onImport}/>
         <button type="button" aria-label="เปิดเมนู" className="header-icon-btn menu-btn" onClick={() => setShowMobile(x => !x)}>{showMobile ? <X size={22}/> : <Menu size={22}/>}</button>
       </div>
     </div>
@@ -79,10 +74,10 @@ function Header({ page, onPage, onExport, onImport, user, syncStatus, onLogin, o
 }
 
 function Splash() {
-  return <div className="splash" role="status" aria-label="กำลังเปิด GradeHub">
+  return <div className="splash" role="status" aria-label="กำลังเปิด Gradeculator">
     <div className="splash-content">
-      <span className="splash-brand-mark"><GradeHubMark/></span>
-      <div className="splash-title">Welcome to <span>GradeHub</span>.</div>
+      <span className="splash-brand-mark"><GradeculatorMark/></span>
+      <div className="splash-title">Welcome to <span>Gradeculator</span>.</div>
       <p>ให้เราช่วยคำนวณผลการเรียนของคุณ</p>
       <span className="splash-loader" aria-hidden="true"/>
     </div>
@@ -104,7 +99,7 @@ function EmptyState({ icon: Icon, title, detail, action, onAction }) {
   </div>;
 }
 
-function Dashboard({ data, onCourses, onSample }) {
+function Dashboard({ data, onCourses, onSample, onToggleTermGpa }) {
   const summary = useMemo(() => cumulativeStats(data), [data]);
   const terms = useMemo(() => allSemesters(data), [data]);
   return <main className="page page-dashboard">
@@ -128,7 +123,12 @@ function Dashboard({ data, onCourses, onSample }) {
       <div className="term-overview-list">{terms.map(({ year, semester }) => {
         const stats = semesterStats(semester);
         return <article className="term-overview-card" key={semester.id}>
-          <div className="term-overview-top"><div className="term-overview-title"><span className="term-num"><CalendarDays size={19}/></span><div><h3>ปีที่ {year.number} · {termName(semester)}</h3><span className={'status-pill ' + semester.status}>{statusText[semester.status] ?? 'วางแผนไว้'}</span></div></div><strong className="term-overview-gpa">{gradeFormat(stats.gpa)}<small> / 4.00</small></strong></div>
+          <div className="term-overview-top"><div className="term-overview-title"><span className="term-num"><CalendarDays size={19}/></span><div><h3>ปีที่ {year.number} · {termName(semester)}</h3><span className={'status-pill ' + semester.status}>{statusText[semester.status] ?? 'วางแผนไว้'}</span></div></div><div className="term-overview-right">
+  <label className="term-gpa-switch"><input type="checkbox" checked={semester.includeInGpa !== false}
+    onChange={() => onToggleTermGpa(semester.id)} aria-label={`นับปีที่ ${year.number} ${termName(semester)} ใน GPA รวม`}/>
+    <span className="term-gpa-switch-track" aria-hidden="true"/><span className="term-gpa-switch-label">{semester.includeInGpa === false ? 'ไม่นับ GPA รวม' : 'นับ GPA รวม'}</span></label>
+  <strong className="term-overview-gpa">{gradeFormat(stats.gpa)}<small> / 4.00</small></strong>
+</div></div>
           <div className="term-metrics"><div><span>หน่วยกิตลงทะเบียน</span><strong>{numberFormat(stats.credits)}</strong></div><div><span>หน่วยกิตที่ได้เกรด</span><strong>{numberFormat(stats.gradedCredits)}</strong></div><div><span>ผ่าน</span><strong className="success-text">{stats.passed}</strong></div><div><span>ตก</span><strong className="danger-text">{stats.failed}</strong></div></div>
         </article>;
       })}</div>}
@@ -381,7 +381,7 @@ function Destination({ data, onChangeDraft, onAddDraftRow, onRemoveDraftRow, onC
         <div><span className="sandbox-result-title">GPA จากวิชาที่กรอกครบ</span><strong>{gradeFormat(draftResult.gpa)}<small> / 4.00</small></strong></div>
         <div className="sandbox-result-meta"><span>คำนวณแล้ว {draftResult.included} วิชา</span><span>{numberFormat(draftResult.totalCredits)} หน่วยกิต</span></div>
       </div>
-      <p className="sandbox-hint">ใช้เกณฑ์มาตรฐาน GradeHub: A ตั้งแต่ 80, B+ 75, B 70, C+ 65, C 60, D+ 55, D 50, F ต่ำกว่า 50 คะแนน · แถวที่กรอกไม่ครบหรือคะแนนไม่อยู่ในช่วง 0–100 จะไม่ถูกคิด GPA</p>
+      <p className="sandbox-hint">ใช้เกณฑ์มาตรฐาน Gradeculator: A ตั้งแต่ 80, B+ 75, B 70, C+ 65, C 60, D+ 55, D 50, F ต่ำกว่า 50 คะแนน · แถวที่กรอกไม่ครบหรือคะแนนไม่อยู่ในช่วง 0–100 จะไม่ถูกคิด GPA</p>
       <div className="sandbox-bottom-actions"><span><ShieldCheck size={16}/>บันทึกอัตโนมัติ {data.calculatorDraft ? '· ข้อมูลจะอยู่จนกว่าจะล้าง' : '· เริ่มกรอกเพื่อบันทึก'}</span><button className="btn btn-outline sandbox-clear" type="button" onClick={onClearDraft}><Trash2 size={16}/>ล้างข้อมูล</button></div>
     </section>
   </main>;
@@ -522,7 +522,7 @@ export default function App() {
   const openModal = (type, details={}) => setModal({ type, ...details });
   const confirmRemove = (message, action) => setDeleteRequest({ message, action });
   const completeRemove = () => { if(!deleteRequest) return; change(deleteRequest.action); setDeleteRequest(null); notify('ลบข้อมูลแล้ว'); };
-  const addSample=()=>{if(window.confirm('เพิ่มข้อมูลตัวอย่าง 4 วิชาเพื่อทดลองหน้าตา GradeHub หรือไม่?')){setData(prev=>({...makeSampleData(), calculatorDraft: prev.calculatorDraft}));notify('เพิ่มข้อมูลตัวอย่างแล้ว สามารถแก้ไขหรือลบได้');}};
+  const addSample=()=>{if(window.confirm('เพิ่มข้อมูลตัวอย่าง 4 วิชาเพื่อทดลองหน้าตา Gradeculator หรือไม่?')){setData(prev=>({...makeSampleData(), calculatorDraft: prev.calculatorDraft}));notify('เพิ่มข้อมูลตัวอย่างแล้ว สามารถแก้ไขหรือลบได้');}};
   // A private import into the signed-in account. Never embed a user's JSON
   // into the public app bundle, source code, or sample/test fixtures.
   const importBackup = async event => {
@@ -539,7 +539,7 @@ export default function App() {
       }
       const parsed = JSON.parse(await file.text());
       if (!isValidData(parsed)) {
-        notify('ไฟล์ไม่ถูกต้องหรือไม่ใช่ข้อมูลสำรอง GradeHub');
+        notify('ไฟล์ไม่ถูกต้องหรือไม่ใช่ข้อมูลสำรอง Gradeculator');
         return;
       }
       const imported = normalizeData(parsed);
@@ -552,7 +552,7 @@ export default function App() {
       goPage('dashboard');
       notify('รวมข้อมูลจากไฟล์แล้ว กำลังซิงก์เข้าบัญชี · รอจนขึ้น “ซิงก์แล้ว”');
     } catch (error) {
-      console.error('Private GradeHub import failed', error);
+      console.error('Private Gradeculator import failed', error);
       notify('เปิดไฟล์ JSON ไม่สำเร็จ กรุณาตรวจไฟล์สำรองแล้วลองใหม่');
     } finally {
       event.target.value = '';
@@ -561,13 +561,14 @@ export default function App() {
   const selected = selectedCourse ? byId(data,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId) : null;
 
   return <>
-    {splash ? <Splash/> : mode === 'boot' ? <div className="account-gateway"><div className="account-loading">กำลังตรวจสอบบัญชี GradeHub…</div></div> : mode === 'entry' ?
+    {splash ? <Splash/> : mode === 'boot' ? <div className="account-gateway"><div className="account-loading">กำลังตรวจสอบบัญชี Gradeculator…</div></div> : mode === 'entry' ?
       <AuthPanel onGuest={enterGuest} onAuthenticated={authenticated} initial="login"/> :
       (mode === 'choose' || mode === 'recover') && choice ? <CloudChoice isRecovery={mode === 'recover'} cloudExists={Boolean(choice.remote)} onBackup={()=>downloadBackup(choice.local)} onCloud={()=>resolveChoice(false)} onGuest={()=>{ if (choice.remote && !window.confirm('การใช้ข้อมูลในเครื่องแทนบัญชีออนไลน์อาจเปลี่ยนคะแนนล่าสุด ยืนยันหรือไม่?')) return; resolveChoice(true); }} onLogout={logout}/> :
       mode === 'error' ? <div className="account-gateway"><section className="account-card decision-card"><h1>ไม่สามารถโหลดข้อมูลบัญชีได้</h1><p className="account-intro">{loadError}</p><button className="btn btn-primary decision-btn" onClick={retryLoad}>ลองเชื่อมต่อใหม่</button><button className="btn btn-outline decision-btn" onClick={logout}>กลับไปใช้ Guest</button></section></div> : <>
       <Header page={page} onPage={goPage} user={user} syncStatus={syncStatus} onLogin={()=>setAuthOpen(true)} onLogout={logout} onRefresh={refresh} onExport={()=>{downloadBackup(data);notify('ดาวน์โหลดไฟล์สำรอง JSON แล้ว');}} onImport={()=>fileRef.current?.click()}/>
       <input className="sr-only" ref={fileRef} type="file" accept="application/json,.json" onChange={importBackup}/>
-      {page==='dashboard' && <Dashboard data={data} onCourses={()=>goPage('courses')} onSample={addSample}/>}
+      {page==='dashboard' && <Dashboard data={data} onCourses={()=>goPage('courses')} onSample={addSample}
+        onToggleTermGpa={id => change(d => { for (const y of d.years) { const sem = y.semesters.find(t => t.id === id); if (sem) { sem.includeInGpa = sem.includeInGpa === false; break; } } })}/>}
       {page==='courses' && (!selectedCourse || !selected?.course ? <Courses data={data}
         onToggleYear={yearId=>toggleCourseFolder('year',yearId)}
         onToggleTerm={termId=>toggleCourseFolder('term',termId)}
@@ -596,17 +597,7 @@ export default function App() {
           onAddBonus={()=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);if(!course.assessments.some(a=>a.type==='bonus')) course.assessments.push({id:uid(),type:'bonus',label:'Bonus',breakdown:'',earned:'',status:'green'});})}
           onEditBonus={(assessmentId,field,value)=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);const bonus=course.assessments.find(a=>a.id===assessmentId&&a.type==='bonus');if(bonus&&field==='breakdown') bonus.breakdown=value;})}/>)}
       {page==='destination' && <Destination data={data} onChangeDraft={editCalculatorRow} onAddDraftRow={addCalculatorRow} onRemoveDraftRow={removeCalculatorRow} onClearDraft={clearCalculatorDraft}/>}
-      {mode === 'cloud' && <div className="private-import-panel">
-        <div className="private-import-copy">
-          <strong>มีไฟล์สำรอง GradeHub เดิมอยู่ไหม?</strong>
-          <span>นำเข้าเฉพาะบัญชีที่กำลังล็อกอิน · รวมกับข้อมูลเดิม · ไม่ใช่ข้อมูลตัวอย่าง</span>
-        </div>
-        <button className="btn btn-outline private-import-button" type="button"
-          onClick={() => fileRef.current?.click()} disabled={syncStatus !== 'synced'}>
-          <Upload size={18}/> นำเข้าข้อมูลส่วนตัวจาก JSON
-        </button>
-      </div>}
-      <footer className="footer"><span><GraduationCap size={17}/> GradeHub</span><span>by smartheart group · v1.8.0 · {mode === 'cloud' ? 'บัญชีออนไลน์ · มีสำเนาในเครื่อง' : 'Guest · ข้อมูลเก็บในเครื่องนี้'}</span></footer>
+      <footer className="footer"><span><GradeculatorMark/> Gradeculator</span><span>by smartheart group · v1.8.0 · {mode === 'cloud' ? 'บัญชีออนไลน์ · มีสำเนาในเครื่อง' : 'Guest · ข้อมูลเก็บในเครื่องนี้'}</span></footer>
     </>}
     {authOpen && <AuthPanel isOverlay initial={recoverPassword ? 'reset-password' : 'login'} recovery={recoverPassword} onGuest={()=>{setAuthOpen(false);setRecoverPassword(false);if(mode==='entry')enterGuest();}} onAuthenticated={account=>{ authenticated(account);setAuthOpen(false);setRecoverPassword(false); }} onClose={()=>{setAuthOpen(false);setRecoverPassword(false);}}/>}
     {conflict && <CloudConflict onBackup={()=>downloadBackup(conflict.local)} onUseCloud={()=>resolveConflict(false)} onOverwrite={()=>{if(window.confirm('การทำเช่นนี้จะแทนที่ข้อมูลออนไลน์ล่าสุดด้วยข้อมูลเครื่องนี้ ยืนยันหรือไม่?'))resolveConflict(true);}} onLogout={logout}/>}
