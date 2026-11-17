@@ -40,7 +40,7 @@ export function loadData() {
     const parsed = JSON.parse(content);
     return isValidData(parsed) ? normalizeData(parsed) : createEmptyData();
   } catch (error) {
-    console.error('Failed to load local GradeHub data', error);
+    console.error('Failed to load local Gradeculator data', error);
     return createEmptyData();
   }
 }
@@ -56,7 +56,7 @@ export function downloadBackup(data) {
   const link = document.createElement('a');
   const date = new Date().toISOString().slice(0, 10);
   link.href = url;
-  link.download = `gradehub-backup-${date}.json`;
+  link.download = `gradeculator-backup-${date}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
