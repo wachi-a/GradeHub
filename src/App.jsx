@@ -54,7 +54,7 @@ function Header({ page, onPage, onExport, onImport }) {
   const items = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'destination', label: 'Destination', icon: Target },
+    { id: 'destination', label: 'Calculator', icon: Calculator },
   ];
   return <header className="topbar">
     <div className="topbar-inner">
@@ -352,6 +352,95 @@ function Destination({ data }) {
   </main>;
 }
 
+
+const GPA_DRAFT_KEY = 'gradehub.calculator.sandbox.v1';
+const GPA_DRAFT_GRADES = [
+  { min: 80, label: 'A', points: 4 },
+  { min: 75, label: 'B+', points: 3.5 },
+  { min: 70, label: 'B', points: 3 },
+  { min: 65, label: 'C+', points: 2.5 },
+  { min: 60, label: 'C', points: 2 },
+  { min: 55, label: 'D+', points: 1.5 },
+  { min: 50, label: 'D', points: 1 },
+  { min: 0, label: 'F', points: 0 },
+];
+const newDraftCourse = () => ({ id: uid(), name: '', credits: '3', score: '' });
+function getSavedDraftCourses() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(GPA_DRAFT_KEY));
+    if (Array.isArray(raw) && raw.length) {
+      return raw.filter(r => r && typeof r === 'object').map(r => ({
+        id: String(r.id || uid()), name: String(r.name || ''),
+        credits: String(r.credits ?? ''), score: String(r.score ?? ''),
+      }));
+    }
+  } catch {}
+  return [newDraftCourse()];
+}
+function CalculatorWorkspace({ data }) {
+  const [drafts, setDrafts] = useState(getSavedDraftCourses);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem(GPA_DRAFT_KEY, JSON.stringify(drafts)); } catch (error) { console.error('Save calculator:', error); }
+  }, [drafts]);
+  const updateRow = (id, field, value) => {
+    setDrafts(old => old.map(r => r.id === id ? { ...r, [field]: value } : r));
+  };
+  const evaluated = drafts.map(row => {
+    const credits = Number(row.credits);
+    const score = Number(row.score);
+    const valid = row.name.trim() !== '' && row.credits !== '' && Number.isFinite(credits) && credits > 0 && credits <= 30 &&
+      row.score !== '' && Number.isFinite(score) && score >= 0 && score <= 100;
+    const grade = valid ? GPA_DRAFT_GRADES.find(item => score >= item.min) : null;
+    return { ...row, creditsNumber: credits, grade, valid };
+  });
+  const counted = evaluated.filter(row => row.valid);
+  const creditsTotal = counted.reduce((sum, row) => sum + row.creditsNumber, 0);
+  const weightedPoints = counted.reduce((sum, row) => sum + row.creditsNumber * row.grade.points, 0);
+  const gpa = creditsTotal ? weightedPoints / creditsTotal : null;
+  return <>
+    <Destination data={data}/>
+    <main className="page" style={{ paddingTop: 0 }}>
+      <section className="white-panel" style={{ padding: 'clamp(20px, 4vw, 36px)', marginBottom: 32 }}>
+        <div className="panel-title-row">
+          <div><div className="eyebrow">GPA CALCULATOR</div><h2>ทดลองคำนวณเกรดเฉลี่ยรายวิชา</h2>
+            <p>ใส่ชื่อวิชา หน่วยกิต และคะแนนเต็ม 100 เพื่อทดลองคำนวณ โดยไม่กระทบ Dashboard หรือ Courses</p></div>
+        </div>
+        <div style={{ display: 'grid', gap: 12, marginTop: 22 }}>
+          {evaluated.map((row, index) => <div key={row.id} className="white-panel" style={{ background: '#f7f9fd', padding: 16, border: '1px solid #e5e9f2', borderRadius: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(82px,1fr) minmax(85px,1fr) auto', gap: 10, alignItems: 'end' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}><label htmlFor={'draft-name-'+row.id}>วิชาที่ {index + 1}</label>
+                <input id={'draft-name-'+row.id} value={row.name} onChange={e=>updateRow(row.id,'name',e.target.value)} placeholder="ชื่อวิชา"/></div>
+              <div className="form-group" style={{ marginBottom: 0 }}><label htmlFor={'draft-credit-'+row.id}>หน่วยกิต</label>
+                <input id={'draft-credit-'+row.id} type="number" min="0.5" max="30" step="0.5" value={row.credits} onChange={e=>updateRow(row.id,'credits',e.target.value)} /></div>
+              <div className="form-group" style={{ marginBottom: 0 }}><label htmlFor={'draft-score-'+row.id}>คะแนน / 100</label>
+                <input id={'draft-score-'+row.id} type="number" min="0" max="100" step="any" value={row.score} onChange={e=>updateRow(row.id,'score',e.target.value)} placeholder="0–100"/></div>
+              <button className="btn btn-outline" type="button" title="ลบวิชาทดลอง" aria-label={'ลบวิชาที่ '+(index + 1)}
+                onClick={()=>setDrafts(old=>old.length>1 ? old.filter(r=>r.id!==row.id) : [newDraftCourse()])}><Trash2 size={18}/></button>
+            </div>
+            <p style={{ margin: '9px 0 0', color: row.valid ? '#257d57' : '#8b92a0', fontSize: 13 }}>
+              {row.valid ? 'เกรด '+row.grade.label+' ('+row.grade.points.toFixed(1)+' GPA)' : 'กรอกข้อมูลให้ครบจึงนำวิชานี้มาคำนวณ'}
+            </p>
+          </div>)}
+        </div>
+        <button className="btn btn-outline" type="button" style={{ marginTop: 16 }} onClick={()=>setDrafts(old=>[...old,newDraftCourse()])}>
+          <Plus size={18}/> เพิ่มวิชา
+        </button>
+        <div style={{ marginTop: 22, borderRadius: 14, padding: 20, background: '#f1f5ff', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div><div style={{ fontSize: 14, color: '#677287' }}>เกรดเฉลี่ยจากวิชาที่ทดลอง</div>
+            <strong style={{ color: '#304da6', fontSize: 34 }}>{gpa === null ? '—' : gpa.toFixed(2)} <small style={{ fontSize: 16 }}>/ 4.00</small></strong>
+            <div style={{ color: '#677287', fontSize: 13 }}>{counted.length} วิชา · {creditsTotal.toLocaleString('th-TH')} หน่วยกิต</div>
+          </div>
+          <button className="btn btn-outline" type="button" onClick={()=>setShowClearConfirm(true)}><Trash2 size={17}/>ล้างข้อมูล</button>
+        </div>
+        <p className="muted-help" style={{ marginTop: 12 }}>บันทึกอัตโนมัติในเบราว์เซอร์นี้ · การคำนวณทดลองไม่เปลี่ยน GPA จริง</p>
+      </section>
+    </main>
+    {showClearConfirm && <DeleteConfirmation message="ต้องการล้างข้อมูลวิชาทดลองทั้งหมดหรือไม่? คะแนนใน Courses จะไม่ถูกลบ" onCancel={()=>setShowClearConfirm(false)}
+      onConfirm={()=>{setDrafts([newDraftCourse()]);setShowClearConfirm(false);}}/>}
+  </>;
+}
+
 function Modal({ title, subtitle, onClose, children }) {
   const ref = useRef(null);
   useEffect(() => { const onKey = e => { if(e.key === 'Escape') onClose(); }; document.addEventListener('keydown',onKey); document.body.style.overflow='hidden'; ref.current?.querySelector('input,select,button')?.focus(); return () => { document.removeEventListener('keydown',onKey); document.body.style.overflow=''; }; }, [onClose]);
@@ -501,8 +590,8 @@ export default function App() {
           onEditGroupStat={(exam,field,value)=>change(d=>{if(value!=='' && (!Number.isFinite(Number(value)) || Number(value)<0 || (field==='n' && !Number.isInteger(Number(value)))))return;const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);if(!course.groupStats) course.groupStats={midterm:{},final:{}};if(!course.groupStats[exam])course.groupStats[exam]={};course.groupStats[exam][field]=value;})}
           onAddBonus={()=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);if(!course.assessments.some(a=>a.type==='bonus')) course.assessments.push({id:uid(),type:'bonus',label:'Bonus',breakdown:'',earned:'',status:'green'});})}
           onEditBonus={(assessmentId,field,value)=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);const bonus=course.assessments.find(a=>a.id===assessmentId&&a.type==='bonus');if(bonus&&field==='breakdown') bonus.breakdown=value;})}/>)}
-      {page==='destination' && <Destination data={data}/>}
-      <footer className="footer"><span><GraduationCap size={17}/> GradeHub</span><span>by smartheart group · v1.6.2 · ข้อมูลบันทึกบนเครื่องของคุณ</span></footer>
+      {page==='destination' && <CalculatorWorkspace data={data}/>}
+      <footer className="footer"><span><GraduationCap size={17}/> GradeHub</span><span>by smartheart group · Calculator · ข้อมูลบันทึกบนเครื่องของคุณ</span></footer>
     </>}
     {deleteRequest && <DeleteConfirmation message={deleteRequest.message} onCancel={()=>setDeleteRequest(null)} onConfirm={completeRemove}/>}
     {toast&&!splash&&<div role="status" className="toast"><CheckCircle2 size={18}/>{toast}<button aria-label="ปิด" onClick={()=>setToast('')}><X size={16}/></button></div>}
