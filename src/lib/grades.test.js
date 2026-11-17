@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCourse, createYear, createSemester, gradeForScore, evaluateCourse, semesterStats, cumulativeStats, projectGoal, reorderAssessments } from './grades.js';
+import { createEmptyData, createCourse, createYear, createSemester, gradeForScore, evaluateCourse, semesterStats, cumulativeStats, yearStats, projectGoal, reorderAssessments } from './grades.js';
 
 test('Grade boundaries align with screenshot; decimal grades supported', () => {
   const cases = [[100,'A'],[80,'A'],[79.99,'B+'],[75,'B+'],[70,'B'],[65,'C+'],[60,'C'],[55,'D+'],[50,'D'],[49.99,'F'],[0,'F']];
