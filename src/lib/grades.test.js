@@ -185,3 +185,18 @@ test('Inline grouped-exam stats keep original keys and never change GPA', async 
   course.groupGrade='B+';
   assert.equal(evaluateCourse(course).points,3.5);
 });
+
+test('excluding a term removes it from cumulative GPA and completed credits while retaining its own GPA', () => {
+  const document = createEmptyData(), year = createYear(1);
+  const first = createSemester(1,'completed'), second = createSemester(2,'completed');
+  first.courses.push(createCourse({name:'First',credits:3,gradingMode:'manual',manualGrade:'A'}));
+  second.courses.push(createCourse({name:'Second',credits:3,gradingMode:'manual',manualGrade:'D'}));
+  year.semesters.push(first,second); document.years.push(year);
+  assert.equal(first.includeInGpa,true);
+  assert.equal(cumulativeStats(document).gpa,2.5);
+  second.includeInGpa = false;
+  assert.equal(cumulativeStats(document).gpa,4);
+  assert.equal(cumulativeStats(document).passedCredits,3);
+  assert.equal(yearStats(year).gpa,4);
+  assert.equal(semesterStats(second).gpa,1);
+});
