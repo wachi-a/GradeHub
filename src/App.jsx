@@ -13,6 +13,7 @@ import {
   lastCurrentTermOrder, termOrder, projectGoal, makeSampleData,
 } from './lib/grades.js';
 import { loadData, saveData, isValidData, normalizeData, downloadBackup } from './lib/storage.js';
+import { mergeDocuments } from './lib/merge.js';
 import { isFolderOpen, toggleFolder, toggleExamStats } from './lib/folders.js';
 import { AuthPanel, CloudChoice, CloudConflict, AccountHeader } from './Auth.jsx';
 import { useAccountSync } from './useAccountSync.js';
@@ -522,11 +523,40 @@ export default function App() {
   const confirmRemove = (message, action) => setDeleteRequest({ message, action });
   const completeRemove = () => { if(!deleteRequest) return; change(deleteRequest.action); setDeleteRequest(null); notify('ลบข้อมูลแล้ว'); };
   const addSample=()=>{if(window.confirm('เพิ่มข้อมูลตัวอย่าง 4 วิชาเพื่อทดลองหน้าตา GradeHub หรือไม่?')){setData(prev=>({...makeSampleData(), calculatorDraft: prev.calculatorDraft}));notify('เพิ่มข้อมูลตัวอย่างแล้ว สามารถแก้ไขหรือลบได้');}};
-  const importBackup=async(event)=>{
-    const file=event.target.files?.[0];if(!file)return;
-    try { const parsed=JSON.parse(await file.text());if(!isValidData(parsed)){notify('ไฟล์ไม่ถูกต้องหรือไม่ใช่ข้อมูล GradeHub v1');return;}
-      if(window.confirm('นำเข้าข้อมูลสำรองจะเขียนทับข้อมูล GradeHub ปัจจุบันทั้งหมด ยืนยันหรือไม่?')) {setData(normalizeData(parsed));setSelectedCourse(null);goPage('dashboard');notify('นำเข้าข้อมูลสำเร็จ');}
-    } catch(error) {console.error(error);notify('เปิดไฟล์ไม่ได้ กรุณาเลือก JSON สำรองจาก GradeHub');} finally {event.target.value='';}
+  // A private import into the signed-in account. Never embed a user's JSON
+  // into the public app bundle, source code, or sample/test fixtures.
+  const importBackup = async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      if (mode !== 'cloud' || !user?.id) {
+        notify('กรุณาเข้าสู่ระบบก่อนนำเข้าข้อมูลส่วนตัว');
+        return;
+      }
+      if (syncStatus !== 'synced') {
+        notify('กรุณารอให้สถานะขึ้น “ซิงก์แล้ว” ก่อนนำเข้าข้อมูล');
+        return;
+      }
+      const parsed = JSON.parse(await file.text());
+      if (!isValidData(parsed)) {
+        notify('ไฟล์ไม่ถูกต้องหรือไม่ใช่ข้อมูลสำรอง GradeHub');
+        return;
+      }
+      const imported = normalizeData(parsed);
+      const courseCount = imported.years.reduce((n, year) => n + year.semesters.reduce((m, term) => m + term.courses.length, 0), 0);
+      if (!window.confirm(`นำข้อมูลสำรองส่วนตัว ${courseCount} วิชาเข้าสู่บัญชี ${user.email} ใช่ไหม?\n\nระบบจะรวมกับข้อมูลในบัญชี โดยเก็บข้อมูลบัญชีปัจจุบันไว้เมื่อเป็นวิชาเดียวกัน และเพิ่มรายการจากไฟล์ที่ยังไม่มี\n\nข้อมูลจะบันทึกผ่านบัญชี Supabase ของคุณเท่านั้น ไม่ใช่ข้อมูลตัวอย่างและไม่เผยแพร่ใน GitHub`)) return;
+      // Cloud edits take precedence for matching stable course IDs, retaining
+      // new/missing terms and assessments from the incoming private backup.
+      setData(current => mergeDocuments(imported, current));
+      setSelectedCourse(null);
+      goPage('dashboard');
+      notify('รวมข้อมูลจากไฟล์แล้ว กำลังซิงก์เข้าบัญชี · รอจนขึ้น “ซิงก์แล้ว”');
+    } catch (error) {
+      console.error('Private GradeHub import failed', error);
+      notify('เปิดไฟล์ JSON ไม่สำเร็จ กรุณาตรวจไฟล์สำรองแล้วลองใหม่');
+    } finally {
+      event.target.value = '';
+    }
   };
   const selected = selectedCourse ? byId(data,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId) : null;
 
@@ -566,6 +596,16 @@ export default function App() {
           onAddBonus={()=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);if(!course.assessments.some(a=>a.type==='bonus')) course.assessments.push({id:uid(),type:'bonus',label:'Bonus',breakdown:'',earned:'',status:'green'});})}
           onEditBonus={(assessmentId,field,value)=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);const bonus=course.assessments.find(a=>a.id===assessmentId&&a.type==='bonus');if(bonus&&field==='breakdown') bonus.breakdown=value;})}/>)}
       {page==='destination' && <Destination data={data} onChangeDraft={editCalculatorRow} onAddDraftRow={addCalculatorRow} onRemoveDraftRow={removeCalculatorRow} onClearDraft={clearCalculatorDraft}/>}
+      {mode === 'cloud' && <div className="private-import-panel">
+        <div className="private-import-copy">
+          <strong>มีไฟล์สำรอง GradeHub เดิมอยู่ไหม?</strong>
+          <span>นำเข้าเฉพาะบัญชีที่กำลังล็อกอิน · รวมกับข้อมูลเดิม · ไม่ใช่ข้อมูลตัวอย่าง</span>
+        </div>
+        <button className="btn btn-outline private-import-button" type="button"
+          onClick={() => fileRef.current?.click()} disabled={syncStatus !== 'synced'}>
+          <Upload size={18}/> นำเข้าข้อมูลส่วนตัวจาก JSON
+        </button>
+      </div>}
       <footer className="footer"><span><GraduationCap size={17}/> GradeHub</span><span>by smartheart group · v1.8.0 · {mode === 'cloud' ? 'บัญชีออนไลน์ · มีสำเนาในเครื่อง' : 'Guest · ข้อมูลเก็บในเครื่องนี้'}</span></footer>
     </>}
     {authOpen && <AuthPanel isOverlay initial={recoverPassword ? 'reset-password' : 'login'} recovery={recoverPassword} onGuest={()=>{setAuthOpen(false);setRecoverPassword(false);if(mode==='entry')enterGuest();}} onAuthenticated={account=>{ authenticated(account);setAuthOpen(false);setRecoverPassword(false); }} onClose={()=>{setAuthOpen(false);setRecoverPassword(false);}}/>}

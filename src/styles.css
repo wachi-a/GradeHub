@@ -830,3 +830,12 @@ h1,h2,h3,p { margin-top: 0; }
 .account-link-google:hover:not(:disabled) { background:#f2f6fe; }
 .account-link-google:disabled { opacity:.5; cursor:wait; }
 @media (max-width:720px) { .account-link-google { padding:3px; min-width:29px; } .account-link-google-label { display:none; } }
+
+/* Signed-in user's private JSON import, below the workspace (not in the header). */
+.private-import-panel { max-width: 1180px; margin: 24px auto 12px; padding: 16px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; border: 1px solid #dee7f7; border-radius: 14px; background: #f7faff; }
+.private-import-copy { display: flex; flex-direction: column; gap: 5px; color: #394766; }
+.private-import-copy strong { font-size: 14px; }
+.private-import-copy span { font-size: 12px; color: #7b879c; }
+.private-import-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.private-import-button:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 680px) { .private-import-panel { margin: 18px 12px 10px; padding: 15px; } .private-import-button { width: 100%; } }
