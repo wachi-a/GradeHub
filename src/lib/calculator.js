@@ -80,6 +80,6 @@ export function calculateDraftGpa(rows) {
 }
 
 /** Any actual Guest coursework OR scratchpad draft should migrate at login. */
-export function hasAnyGradeHubData(document) {
+export function hasAnyGradeculatorData(document) {
   return Boolean((Array.isArray(document?.years) && document.years.length > 0) || hasCalculatorInputs(document));
 }
