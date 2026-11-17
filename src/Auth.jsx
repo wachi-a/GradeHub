@@ -1,0 +1,118 @@
+import React, { useState } from 'react';
+import { ArrowLeft, CheckCircle2, Cloud, CloudOff, Eye, EyeOff, GraduationCap, LogIn, LogOut, RefreshCw, ShieldCheck, UserRound, X } from 'lucide-react';
+import { cloudConfigured, supabase } from './lib/cloud.js';
+
+const errorText = error => {
+  const message = String(error?.message || error || 'เกิดข้อผิดพลาด');
+  if (/Invalid login credentials/i.test(message)) return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+  if (/Email not confirmed/i.test(message)) return 'กรุณายืนยันอีเมลผ่านลิงก์ที่ได้รับก่อน';
+  if (/rate limit|too many requests/i.test(message)) return 'มีการใช้งานถี่เกินไป กรุณาลองใหม่ภายหลัง';
+  if (/fetch|network/i.test(message)) return 'เชื่อมต่ออินเทอร์เน็ตไม่ได้';
+  return message;
+};
+
+export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login', isOverlay = false, recovery = false }) {
+  const [formMode, setFormMode] = useState(recovery ? 'reset-password' : initial);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [success, setSuccess] = useState(false);
+  const handleSubmit = async event => {
+    event.preventDefault();
+    if (!cloudConfigured) return;
+    setBusy(true); setMessage(''); setSuccess(false);
+    try {
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`;
+      if (formMode === 'register') {
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirectTo } });
+        if (error) throw error;
+        if (data.session?.user) onAuthenticated(data.session.user);
+        else { setMessage('ส่งคำขอยืนยันบัญชีแล้ว กรุณาตรวจอีเมล (รวมโฟลเดอร์สแปม)'); setSuccess(true); }
+      } else if (formMode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+        if (error) throw error;
+        setMessage('ถ้าบัญชีนี้มีอยู่ ระบบจะส่งลิงก์ตั้งรหัสผ่านใหม่ทางอีเมล'); setSuccess(true);
+      } else if (formMode === 'reset-password') {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+        setMessage('เปลี่ยนรหัสผ่านสำเร็จแล้ว'); setSuccess(true);
+        setFormMode('login');
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        if (data.user) onAuthenticated(data.user);
+      }
+    } catch (error) { setMessage(errorText(error)); setSuccess(false); }
+    finally { setBusy(false); }
+  };
+  const switchMode = next => { setFormMode(next); setMessage(''); setSuccess(false); };
+  const title = formMode === 'register' ? 'สร้างบัญชี GradeHub' : formMode === 'forgot' ? 'ลืมรหัสผ่าน?' : formMode === 'reset-password' ? 'ตั้งรหัสผ่านใหม่' : 'เข้าสู่ระบบ GradeHub';
+  return <div className={isOverlay ? 'account-modal-backdrop' : 'account-gateway'}>
+    <section className="account-card" role={isOverlay ? 'dialog' : 'main'} aria-modal={isOverlay ? 'true' : undefined} aria-label={title}>
+      {isOverlay && <button type="button" aria-label="ปิด" className="account-close" onClick={onClose}><X size={19}/></button>}
+      <div className="account-badge"><GraduationCap size={29}/></div>
+      <div className="eyebrow">GRADEHUB ACCOUNT</div>
+      <h1>{title}</h1>
+      <p className="account-intro">ล็อกอินเพื่อซิงก์ข้อมูลรายวิชาและคะแนนระหว่างเว็บไซต์กับโทรศัพท์ หรือใช้งานแบบ Guest โดยเก็บข้อมูลไว้ในเครื่อง</p>
+      {!cloudConfigured ? <div className="account-setup-warning"><CloudOff size={20}/><span>ยังไม่ได้เชื่อมต่อฐานข้อมูลออนไลน์ กรุณาตั้งค่า Supabase ตามคู่มือ SETUP_LOGIN.md ก่อน จึงจะสมัครสมาชิกและเข้าสู่ระบบได้</span></div> :
+        <form onSubmit={handleSubmit} className="account-form">
+          {formMode !== 'reset-password' && <label>อีเมล<input type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>}
+          {(formMode === 'login' || formMode === 'register') && <label>รหัสผ่าน
+            <div className="password-row"><input type={showPassword ? 'text' : 'password'} autoComplete={formMode === 'register' ? 'new-password' : 'current-password'} minLength={formMode === 'register' ? 8 : undefined} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={formMode === 'register' ? 'อย่างน้อย 8 ตัวอักษร' : 'รหัสผ่าน'}/><button type="button" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>
+          </label>}
+          {formMode === 'reset-password' && <label>รหัสผ่านใหม่<input type="password" required minLength={8} autoComplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร" value={newPassword} onChange={e=>setNewPassword(e.target.value)}/></label>}
+          {message && <p className={success ? 'account-message success' : 'account-message error'} role="status">{message}</p>}
+          <button className="btn btn-primary account-submit" type="submit" disabled={busy}>
+            {busy ? <RefreshCw size={17} className="spin-icon"/> : <LogIn size={17}/>}
+            {formMode === 'register' ? 'สมัครสมาชิก' : formMode === 'forgot' ? 'ส่งลิงก์ตั้งรหัสผ่านใหม่' : formMode === 'reset-password' ? 'เปลี่ยนรหัสผ่าน' : 'เข้าสู่ระบบ'}
+          </button>
+          <div className="account-switch">
+            {formMode !== 'login' && <button type="button" onClick={()=>switchMode('login')}><ArrowLeft size={14}/>กลับไปเข้าสู่ระบบ</button>}
+            {formMode === 'login' && <><button type="button" onClick={()=>switchMode('register')}>สมัครสมาชิก</button><button type="button" onClick={()=>switchMode('forgot')}>ลืมรหัสผ่าน</button></>}
+          </div>
+        </form>}
+      <div className="account-divider"><span>หรือ</span></div>
+      <button type="button" className="btn btn-outline account-guest" onClick={onGuest}><UserRound size={18}/>ใช้งานแบบ Guest (ไม่ต้องเข้าสู่ระบบ)</button>
+      <p className="account-footnote"><ShieldCheck size={15}/> ข้อมูล Guest จะอยู่ในเครื่องของเบราว์เซอร์นี้เท่านั้น และไม่ซิงก์ข้ามอุปกรณ์</p>
+    </section>
+  </div>;
+}
+
+export function CloudChoice({ cloudExists, onCloud, onGuest, onLogout, onBackup, isRecovery = false }) {
+  return <div className="account-gateway"><section className="account-card decision-card" role="main">
+    <div className="account-badge"><Cloud size={28}/></div>
+    <div className="eyebrow">SYNC YOUR GRADEHUB</div>
+    <h1>{isRecovery ? 'กู้คืนข้อมูลที่ยังไม่ได้ซิงก์' : 'เลือกข้อมูลที่ต้องการใช้'}</h1>
+    <p className="account-intro">{isRecovery ? 'มีข้อมูลบัญชีที่แก้ไขค้างอยู่ในเครื่องนี้และยังไม่ถูกส่งขึ้นออนไลน์ กรุณาเลือกว่าจะใช้ข้อมูลออนไลน์ล่าสุด หรือใช้สำเนาในเครื่องนี้' : 'ในเครื่องนี้มีข้อมูล Guest อยู่แล้ว เลือกว่าจะใช้ข้อมูลบัญชีออนไลน์หรือย้ายข้อมูล Guest ขึ้นบัญชี (ข้อมูลเดิมในเครื่องยังอยู่)'}</p>
+    <button className="btn btn-primary decision-btn" onClick={onCloud}><Cloud size={19}/>{cloudExists ? 'ใช้ข้อมูลบัญชีออนไลน์เดิม' : 'เริ่มบัญชีออนไลน์ว่างเปล่า'}</button>
+    <button className="btn btn-outline decision-btn" onClick={onGuest}><Cloud size={19}/>{isRecovery ? 'ใช้ข้อมูลบัญชีที่ค้างอยู่ในเครื่องนี้' : cloudExists ? 'ย้ายข้อมูล Guest ขึ้นบัญชี (แทนข้อมูลออนไลน์)' : 'ย้ายข้อมูล Guest ขึ้นบัญชีใหม่'}</button>
+    <button type="button" className="account-backup-btn" onClick={onBackup}>สำรองข้อมูลในเครื่องเป็น JSON ก่อนเลือก</button>
+    <p className="account-footnote">{isRecovery ? 'แนะนำให้สำรอง JSON ก่อนเปลี่ยนข้อมูล หากไม่แน่ใจให้กลับไปใช้ Guest แล้วค่อยแก้ไขภายหลัง' : 'ข้อมูล Guest ต้นฉบับยังเก็บอยู่ในเบราว์เซอร์นี้ ไม่ได้ถูกลบทิ้ง และมีปุ่ม Export JSON ให้สำรองได้เสมอ'}</p>
+    <button className="text-link" onClick={onLogout}>กลับไปใช้ Guest</button>
+  </section></div>;
+}
+
+export function CloudConflict({ onUseCloud, onOverwrite, onLogout, onBackup }) {
+  return <div className="account-modal-backdrop"><section className="account-card decision-card" role="dialog" aria-modal="true" aria-label="ข้อมูลออนไลน์เปลี่ยนจากอีกเครื่อง">
+    <div className="account-badge alert"><CloudOff size={28}/></div>
+    <h1>พบข้อมูลที่แก้ไขจากอีกอุปกรณ์</h1>
+    <p className="account-intro">ระบบหยุดการซิงก์เพื่อป้องกันการเขียนทับคะแนนจากอีกเครื่อง ข้อมูลที่กำลังแก้บนเครื่องนี้ยังเก็บไว้เป็นสำเนาเฉพาะบัญชี</p>
+    <button className="account-backup-btn" onClick={onBackup}>ดาวน์โหลดข้อมูลเครื่องนี้เป็น JSON ก่อนตัดสินใจ</button>
+    <button className="btn btn-primary decision-btn" onClick={onUseCloud}><RefreshCw size={18}/>โหลดข้อมูลออนไลน์ล่าสุด</button>
+    <button className="btn btn-outline decision-btn" onClick={onOverwrite}>ใช้ข้อมูลเครื่องนี้แทน (ต้องยืนยัน)</button>
+    <button className="text-link" onClick={onLogout}>ออกจากระบบโดยเก็บข้อมูลสำรองไว้ในเครื่อง</button>
+  </section></div>;
+}
+
+export function AccountHeader({ user, syncStatus, onLogin, onLogout, onRefresh }) {
+  const statusLabel = { synced:'ซิงก์แล้ว', syncing:'กำลังซิงก์', pending:'รอซิงก์', offline:'ออฟไลน์', conflict:'ข้อมูลชนกัน' }[syncStatus] || 'ระบบคลาวด์';
+  return user ? <div className="account-toolbar">
+    <span className={'sync-indicator ' + (syncStatus||'')} title={statusLabel}>{syncStatus === 'synced' ? <CheckCircle2 size={15}/> : syncStatus === 'syncing' ? <RefreshCw size={15} className="spin-icon"/> : <CloudOff size={15}/>}<span>{statusLabel}</span></span>
+    <button className="account-toolbar-btn" onClick={onRefresh} title="โหลดข้อมูลออนไลน์ล่าสุด" aria-label="รีเฟรชข้อมูล"><RefreshCw size={18}/></button>
+    <span className="account-email" title={user.email}>{user.email}</span>
+    <button className="account-toolbar-btn" onClick={onLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ"><LogOut size={18}/></button>
+  </div> : <button className="btn btn-outline account-login-btn" type="button" onClick={onLogin}><LogIn size={17}/> Login</button>;
+}

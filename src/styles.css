@@ -654,3 +654,167 @@ h1,h2,h3,p { margin-top: 0; }
   color: #3152ad; font-weight: 600; padding: 5px 0 2px;
 }
 .assessment-info .exam-details-toggle:hover { color: #203d88; }
+
+/* GradeHub v1.7 — optional account and private cloud sync */
+.account-gateway { min-height: 100vh; background: radial-gradient(circle at 50% 0%, #e8edfc 0%, #f5f6f8 45%, #f5f6f8 100%); display: flex; justify-content: center; align-items: center; padding: 28px 16px; }
+.account-modal-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(27,35,55,.55); display: flex; justify-content: center; align-items: center; padding: 20px 14px; overflow-y: auto; }
+.account-card { width: min(100%, 450px); background: #fff; padding: 30px 32px 28px; border-radius: 23px; box-shadow: 0 18px 42px rgba(27,36,55,.14); position: relative; max-height: calc(100vh - 36px); overflow-y: auto; }
+.account-modal-backdrop .account-card { box-shadow: 0 28px 70px rgba(0,0,0,.23); }
+.account-badge { height: 56px; width: 56px; border-radius: 18px; background: #e9eefa; color: var(--blue); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+.account-badge.alert { background: #fff1e7; color: #bb5c18; }
+.account-card .eyebrow { margin-bottom: 7px; }
+.account-card h1 { margin: 0 0 8px; line-height: 1.35; color: #252e43; font-size: 25px; font-weight: 650; }
+.account-intro { margin: 0 0 20px; color: #778294; line-height: 1.7; font-size: 13px; }
+.account-form { display: flex; flex-direction: column; gap: 14px; }
+.account-form > label { color: #455168; font-weight: 600; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.account-form input { border: 1px solid #dbe2ee; width: 100%; padding: 11px 13px; color: #263347; border-radius: 10px; background: #fff; min-height: 46px; }
+.account-form input:focus { outline: 2px solid #a9b9ef; border-color: #7290db; }
+.password-row { position: relative; }
+.password-row input { padding-right: 48px; }
+.password-row button { position: absolute; top: 4px; right: 4px; height: 38px; width: 40px; display: grid; place-items: center; border: 0; background: none; color: #778396; border-radius: 8px; }
+.password-row button:hover { color: var(--blue); background: #f3f6fc; }
+.account-submit, .account-guest { width: 100%; min-height: 49px; }
+.account-submit { margin-top: 2px; }
+.account-switch { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 8px; }
+.account-switch button { border: 0; background: none; color: #3758af; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.account-switch button:hover { text-decoration: underline; }
+.account-divider { display: flex; align-items: center; gap: 10px; color: #a3aab5; margin: 18px 0; font-size: 12px; }
+.account-divider:before, .account-divider:after { content: ''; flex: 1; height: 1px; background: #e7eaf0; }
+.account-footnote { display: flex; gap: 6px; align-items: flex-start; margin: 15px 0 0; color: #8b96a6; font-size: 11px; line-height: 1.6; }
+.account-footnote svg { flex-shrink: 0; }
+.account-close { border: 0; background: #f0f3f9; color: #687588; position: absolute; top: 18px; right: 18px; border-radius: 8px; width: 35px; height: 35px; display: grid; place-items: center; }
+.account-message { padding: 10px 12px; border-radius: 9px; font-size: 12px; margin: 0; line-height: 1.55; }
+.account-message.error { background: #fff1f0; color: #b3322d; }
+.account-message.success { background: #e8f9ed; color: #16754a; }
+.account-setup-warning { border: 1px solid #f7d8aa; padding: 12px 13px; border-radius: 11px; background: #fffaef; display: flex; gap: 9px; color: #9b6e27; font-size: 12px; line-height: 1.7; }
+.account-setup-warning svg { flex: 0 0 auto; }
+.account-card.decision-card { width: min(100%, 490px); }
+.decision-btn { display: flex; width: 100%; margin-top: 10px; justify-content: center; }
+.decision-card .text-link { display: block; margin: 20px auto 0; font-size: 12px; }
+.account-loading { color: #5a6d93; font-size: 15px; font-weight: 600; }
+.account-toolbar { display: flex; align-items: center; gap: 3px; min-width: 0; }
+.account-toolbar-btn { flex-shrink: 0; width: 34px; height: 38px; border: 0; color: #5d6b80; display: grid; place-items: center; background: none; border-radius: 8px; }
+.account-toolbar-btn:hover { background: #edf2fb; color: #3152a6; }
+.sync-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #7b8797; white-space: nowrap; }
+.sync-indicator.synced { color: #168b69; }
+.sync-indicator.offline, .sync-indicator.conflict { color: #ca672f; }
+.account-email { font-size: 11px; color: #5e6880; max-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.account-login-btn { padding: 7px 12px; min-height: 36px; border-radius: 9px; font-size: 12px; white-space: nowrap; }
+.spin-icon { animation: spin-0 1.2s linear infinite; }
+@keyframes spin-0 { to { transform: rotate(360deg); } }
+@media (max-width: 1080px) {
+ .topbar-inner { gap: 10px; padding: 0 16px; }
+ .main-nav { gap: 4px; }
+ .nav-btn { padding: 9px 11px; font-size: 14px; }
+ .account-email { display: none; }
+ .sync-indicator span { display: none; }
+}
+@media (max-width: 700px) {
+ .account-card { padding: 24px 20px 22px; }
+ .account-card h1 { font-size: 23px; }
+ .account-toolbar-btn { width: 30px; }
+ .account-login-btn { min-height: 33px; padding: 6px 8px; }
+ .header-tools { gap: 0; }
+ .account-toolbar { gap: 0; }
+}
+
+.account-backup-btn { margin: 15px 0 3px; width: 100%; text-align: center; background: #f3f6ff; border: 1px solid #d6e1f5; color: #3659ae; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 12px; }
+.account-backup-btn:hover { background: #e7efff; }
+
+/* v1.7 refinements from annotated PDF — no duplicate empty-state buttons. */
+@media (max-width: 680px) {
+  .semester-heading { flex-wrap: nowrap; padding: 10px 9px; gap: 5px; }
+  .semester-toggle { min-width: 0; flex: 1; gap: 5px; }
+  .semester-circle { flex-shrink: 0; width: 30px; height: 30px; }
+  .semester-heading-text { min-width: 0; }
+  .semester-heading-text strong,
+  .semester-heading-text small { overflow: hidden; text-overflow: ellipsis; }
+  .term-actions { width: auto; flex: 0 0 auto; justify-content: flex-end; gap: 0; }
+  .term-actions .small-icon-btn { width: 27px; padding: 4px; }
+  .assessment-row { flex-wrap: nowrap; gap: 6px; padding: 9px 6px; }
+  .assessment-row.has-exam-statistics { flex-wrap: wrap; }
+  .assessment-drag-handle { width: 16px; flex: 0 0 16px; padding: 0; }
+  .assessment-drag-handle svg { width: 16px; }
+  .assessment-info { min-width: 0; flex: 1 1 auto; }
+  .assessment-info strong { font-size: 12px; }
+  .assessment-info span { font-size: 10px; }
+  .assessment-row .score-entry { order: 0; flex: 0 1 auto; min-width: 0; gap: 3px; padding-right: 5px; }
+  .assessment-row .score-input { width: 34px; font-size: 15px; padding: 6px 0; }
+  .assessment-row .score-divider { font-size: 11px; }
+  .assessment-row .score-flags { order: 0; gap: 0; }
+  .assessment-row .flag-btn { padding: 2px; border-width: 1px; }
+  .assessment-row .flag-btn svg { width: 18px; height: 18px; }
+  .assessment-row .assessment-actions { order: 0; gap: 0; }
+  .assessment-row .assessment-actions .small-icon-btn { width: 25px; padding: 3px; }
+  .assessment-row .assessment-actions svg { width: 15px; }
+  .assessment-row.has-exam-statistics .assessment-inline-stats { order: 10; }
+  .assessment-row .bonus-row-fields { min-width: 0; flex: 1; }
+}
+@media (max-width: 380px) {
+  .assessment-row { gap: 3px; }
+  .assessment-row .score-input { width: 27px; font-size: 14px; }
+  .assessment-row .score-divider { font-size: 10px; }
+  .assessment-info strong { font-size: 11px; }
+}
+
+/* v1.8 Calculator: isolated scratchpad, visually consistent with GradeHub. */
+.scratch-calculator { margin-top: 24px; padding: 32px 35px; }
+.sandbox-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.sandbox-heading h2 { margin: 9px 0 4px; font-size: 24px; line-height: 1.4; color: #303745; font-weight: 600; }
+.sandbox-heading p { color: #929ba8; font-size: 14px; margin: 0; line-height: 1.65; }
+.sandbox-icon { display: grid; place-items: center; color: #3154aa; background: #eaf0ff; width: 50px; height: 50px; flex-shrink: 0; border-radius: 15px; }
+.sandbox-separation-note { display: flex; align-items: flex-start; gap: 9px; background: #f2f6fd; border-radius: 11px; color: #657a9f; padding: 12px 14px; font-size: 13px; line-height: 1.65; margin: 20px 0 20px; }
+.sandbox-separation-note svg { flex-shrink: 0; margin-top: 2px; }
+.sandbox-table-head, .sandbox-row { display: grid; grid-template-columns: minmax(0, 2.8fr) minmax(98px,.8fr) minmax(125px,1fr) 72px 40px; column-gap: 12px; align-items: center; }
+.sandbox-table-head { padding: 0 14px 8px; color: #7e8a99; font-size: 12px; }
+.sandbox-rows { display: grid; gap: 10px; }
+.sandbox-row { padding: 12px 14px; border-radius: 14px; border: 1px solid #e5ebf5; background: #fbfcff; }
+.sandbox-field { min-width: 0; }
+.sandbox-field label { display: none; color: #7b879a; font-size: 12px; margin-bottom: 5px; }
+.sandbox-field input { width: 100%; min-width: 0; height: 43px; border: 1.5px solid #dce3ee; border-radius: 9px; background: white; padding: 8px 12px; color: #2d3645; font: inherit; font-size: 14px; outline: none; }
+.sandbox-field input:focus { border-color: #6687d2; box-shadow: 0 0 0 3px rgba(77,111,186,.10); }
+.sandbox-field input::placeholder { color: #a8b3c3; }
+.sandbox-grade { display: grid; place-items: center; }
+.sandbox-grade-label { display: none; }
+.sandbox-grade .grade-chip { min-width: 39px; text-align: center; }
+.sandbox-pending { color: #a5aebb; font-size: 19px; }
+.sandbox-remove { border: 0; background: transparent; color: #8791a3; display: grid; place-items: center; cursor: pointer; border-radius: 8px; height: 39px; width: 39px; }
+.sandbox-remove:hover, .sandbox-remove:focus-visible { color: #dc4249; background: #fff0f0; }
+.sandbox-add { margin-top: 15px; min-height: 42px; }
+.sandbox-result { margin-top: 23px; padding: 24px 25px; border-radius: 16px; background: #eef3ff; display: flex; align-items: end; justify-content: space-between; gap: 14px; }
+.sandbox-result > div:first-child { display: grid; gap: 5px; }
+.sandbox-result-title { color: #61749b; font-size: 14px; }
+.sandbox-result strong { color: #2d4eac; font-size: 40px; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.sandbox-result strong small { font-size: 15px; font-weight: 450; color: #8b99b5; }
+.sandbox-result-meta { display: grid; gap: 4px; text-align: right; color: #66789d; font-size: 13px; }
+.sandbox-hint { color: #8b95a5; font-size: 12px; line-height: 1.8; margin: 14px 0 17px; }
+.sandbox-bottom-actions { border-top: 1px solid #ecf0f6; padding-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.sandbox-bottom-actions > span { display: inline-flex; align-items: center; gap: 6px; color: #438b73; font-size: 12px; }
+.sandbox-clear { color: #a13f46; border-color: #f2dfe1; white-space: nowrap; }
+@media (max-width: 760px) {
+  .scratch-calculator { padding: 22px 17px; }
+  .sandbox-heading h2 { font-size: 21px; }
+  .sandbox-heading p { font-size: 13px; }
+  .sandbox-icon { width: 43px; height: 43px; }
+  .sandbox-table-head { display: none; }
+  .sandbox-row { grid-template-columns: minmax(0,1fr) minmax(0,.75fr) 52px; row-gap: 12px; column-gap: 8px; }
+  .sandbox-field label, .sandbox-grade-label { display: block; }
+  .sandbox-name { grid-column: 1 / -1; grid-row: 1; }
+  .sandbox-credits { grid-column: 1; grid-row: 2; }
+  .sandbox-score { grid-column: 2; grid-row: 2; }
+  .sandbox-grade { grid-column: 3; grid-row: 2; gap: 6px; }
+  .sandbox-remove { grid-column: 3; grid-row: 1; justify-self: end; height: 32px; width: 32px; }
+  .sandbox-name input { padding-right: 43px; }
+  .sandbox-grade-label { color: #7b879a; font-size: 12px; }
+  .sandbox-result { padding: 20px; }
+  .sandbox-result strong { font-size: 35px; }
+  .sandbox-bottom-actions { align-items: flex-start; }
+}
+@media (max-width: 395px) {
+  .sandbox-row { padding: 10px; column-gap: 5px; }
+  .sandbox-field input { padding: 7px 8px; font-size: 13px; }
+  .sandbox-result { flex-direction: column; align-items: stretch; }
+  .sandbox-result-meta { display: flex; justify-content: space-between; text-align: left; }
+  .sandbox-bottom-actions { flex-direction: column; }
+  .sandbox-clear { align-self: flex-end; }
+}

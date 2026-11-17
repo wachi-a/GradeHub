@@ -14,6 +14,10 @@ import {
 } from './lib/grades.js';
 import { loadData, saveData, isValidData, normalizeData, downloadBackup } from './lib/storage.js';
 import { isFolderOpen, toggleFolder, toggleExamStats } from './lib/folders.js';
+import { AuthPanel, CloudChoice, CloudConflict, AccountHeader } from './Auth.jsx';
+import { useAccountSync } from './useAccountSync.js';
+import { supabase } from './lib/cloud.js';
+import { NEW_ROW_ID, emptyCalculatorRow, calculatorRows, calculateDraftGpa } from './lib/calculator.js';
 
 const gradeFormat = value => value === null || !Number.isFinite(value) ? '—' : value.toFixed(2);
 const numberFormat = value => Number(value).toLocaleString('th-TH', { maximumFractionDigits: 2 });
@@ -49,7 +53,7 @@ function Brand({ onClick }) {
   </button>;
 }
 
-function Header({ page, onPage, onExport, onImport }) {
+function Header({ page, onPage, onExport, onImport, user, syncStatus, onLogin, onLogout, onRefresh }) {
   const [showMobile, setShowMobile] = useState(false);
   const items = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -66,6 +70,7 @@ function Header({ page, onPage, onExport, onImport }) {
         </button>)}
       </nav>
       <div className="header-tools">
+        <AccountHeader user={user} syncStatus={syncStatus} onLogin={onLogin} onLogout={onLogout} onRefresh={onRefresh}/>
         <button className="header-icon-btn" type="button" title="สำรองข้อมูลเป็น JSON" aria-label="สำรองข้อมูล" onClick={onExport}><Download size={19}/></button>
         <button className="header-icon-btn" type="button" title="นำเข้าข้อมูลสำรอง" aria-label="นำเข้าข้อมูล" onClick={onImport}><Upload size={19}/></button>
         <button type="button" aria-label="เปิดเมนู" className="header-icon-btn menu-btn" onClick={() => setShowMobile(x => !x)}>{showMobile ? <X size={22}/> : <Menu size={22}/>}</button>
@@ -142,7 +147,7 @@ function Courses({ data, onToggleYear, onToggleTerm, onAddYear, onEditYear, onDe
       <div><div className="eyebrow">COURSE MANAGEMENT</div><h1>จัดการรายวิชา</h1><p>จัดการข้อมูลของคุณพร้อมการติดตามผลการเรียน</p></div>
       <button className="btn btn-primary" onClick={onAddYear}><Plus size={19}/>เพิ่มปีการศึกษา</button>
     </div>
-    {data.years.length === 0 ? <div className="empty-panel"><EmptyState icon={FolderPlus} title="เริ่มต้นจัดระเบียบผลการเรียน" detail="เพิ่มปีการศึกษาและเทอมเพื่อสร้างโฟลเดอร์เก็บรายวิชาของคุณ" action="เพิ่มปีการศึกษา" onAction={onAddYear}/><button className="link-example" onClick={onSample}><Sparkles size={16}/>ทดลองด้วยข้อมูลตัวอย่าง</button></div> :
+    {data.years.length === 0 ? <div className="empty-panel"><EmptyState icon={FolderPlus} title="เริ่มต้นจัดระเบียบผลการเรียน" detail="กดปุ่มเพิ่มปีการศึกษาด้านบน แล้วเพิ่มเทอมเพื่อเริ่มจัดเก็บรายวิชาของคุณ"/></div> :
       <div className="years-list">{[...data.years].sort((a,b)=>a.number-b.number).map(year => {
         const isYearOpen = isFolderOpen(data, 'year', year.id);
         const yearGpa = yearStats(year).gpa;
@@ -291,7 +296,7 @@ function CourseDetail({ year, semester, course, onBack, onEditCourse, onAddAsses
   </main>;
 }
 
-function Destination({ data }) {
+function Destination({ data, onChangeDraft, onAddDraftRow, onRemoveDraftRow, onClearDraft }) {
   const boundary = lastCurrentTermOrder(data);
   const nextOrder = Math.min(12, Math.max(1, boundary+1));
   const [goal, setGoal] = useState('3.50');
@@ -302,8 +307,12 @@ function Destination({ data }) {
   const validChosen = termOrder(year, semester) > boundary;
   const result = useMemo(() => calculated ? projectGoal(data, goal.trim() === '' ? NaN : Number(goal), Number(year), Number(semester), Number(credits)) : null, [calculated, data, goal, year, semester, credits]);
   const choices = Array.from({length: 12}, (_,i) => ({ year: Math.ceil((i+1)/2), term: (i+1)%2===1?1:2, order:i+1 }));
+  const savedDraft = calculatorRows(data);
+  const draftRows = savedDraft.length ? savedDraft : [emptyCalculatorRow()];
+  const draftResult = calculateDraftGpa(draftRows);
+  const draftGrades = new Map(draftResult.details.map(item => [item.id, item]));
   return <main className="page page-destination">
-    <div className="page-heading"><div><div className="eyebrow">YOUR GPA DESTINATION</div><h1>วางแผนเป้าหมายเกรด</h1><p>คำนวณว่าต้องทำเกรดเท่าไหร่ เพื่อไปถึง GPA ที่คุณตั้งใจ</p></div><span className="destination-head-icon"><Target size={33}/></span></div>
+    <div className="page-heading"><div><div className="eyebrow">GRADE CALCULATOR</div><h1>คำนวณเกรด</h1><p>วางแผน GPA เป้าหมาย และทดลองคำนวณเกรดจากรายวิชาแยกจากข้อมูลจริง</p></div><span className="destination-head-icon"><Target size={33}/></span></div>
     <div className="destination-layout">
       <section className="white-panel destination-form">
         <div className="panel-title-row"><div><h2>วางแผนเป้าหมายระยะยาว</h2><p>ระบุเกรดเฉลี่ยเป้าหมายและเทอมที่ต้องการไปให้ถึง</p></div></div>
@@ -321,7 +330,7 @@ function Destination({ data }) {
     {result && <section className="forecast-section" aria-live="polite">
       {result.error ? <div className="white-panel result-error"><CircleAlert size={23}/>{result.error}</div> :
         <div className="forecast-card">
-          <div className="eyebrow forecast-eyebrow">YOUR GPA DESTINATION</div>
+          <div className="eyebrow forecast-eyebrow">YOUR GPA FORECAST</div>
           <h2>เป้าหมายเกรดเฉลี่ยของคุณ</h2>
           <p className="forecast-period">ภายในปีที่ {year} · เทอม {semester}</p>
           <div className="forecast-main">
@@ -349,96 +358,34 @@ function Destination({ data }) {
           <div className="forecast-schedule"><h3>ประมาณการหน่วยกิตรายเทอม</h3><div className="schedule-chips">{result.pendingCurrentCredits > 0 && <span className="schedule-chip">วิชาปัจจุบันที่รอเกรด {numberFormat(result.pendingCurrentCredits)} นก.</span>}{result.schedule.map((s,i)=><span className="schedule-chip" key={i}>ปี {s.year} เทอม {s.term}: {numberFormat(s.credits)} นก. {s.fromPlan?'(ตามแผน)':''}</span>)}</div></div>
         </div>}
     </section>}
+    <section className="white-panel scratch-calculator" aria-labelledby="sandbox-title">
+      <div className="sandbox-heading">
+        <div><div className="eyebrow">COURSE GPA CALCULATOR</div><h2 id="sandbox-title">ทดลองคำนวณ GPA รายวิชา</h2><p>ใส่ชื่อวิชา หน่วยกิต และคะแนนเต็ม 100 เพื่อคำนวณเกรดเฉลี่ยถ่วงน้ำหนัก</p></div>
+        <span className="sandbox-icon" aria-hidden="true"><Calculator size={25}/></span>
+      </div>
+      <div className="sandbox-separation-note"><Info size={17}/><span>พื้นที่ทดลองแยกจาก Courses และ Dashboard โดยสิ้นเชิง ไม่เปลี่ยน GPA จริงและไม่ถูกนำไปคำนวณเป้าหมายด้านบน</span></div>
+      <div className="sandbox-table-head" aria-hidden="true"><span>ชื่อรายวิชา</span><span>หน่วยกิต</span><span>คะแนน / 100</span><span>เกรด</span><span></span></div>
+      <div className="sandbox-rows">
+        {draftRows.map((row, index) => {
+          const detail = draftGrades.get(row.id);
+          return <div className="sandbox-row" key={row.id}>
+            <div className="sandbox-field sandbox-name"><label htmlFor={`scratch-name-${row.id}`}>ชื่อรายวิชา</label><input id={`scratch-name-${row.id}`} type="text" maxLength="150" value={row.name} placeholder={`วิชาที่ ${index + 1} เช่น Calculus`} onChange={e=>onChangeDraft(row.id,'name',e.target.value)}/></div>
+            <div className="sandbox-field sandbox-credits"><label htmlFor={`scratch-credits-${row.id}`}>หน่วยกิต</label><input id={`scratch-credits-${row.id}`} type="number" min="0.5" max="30" step="0.5" inputMode="decimal" value={row.credits} placeholder="3" onChange={e=>onChangeDraft(row.id,'credits',e.target.value)}/></div>
+            <div className="sandbox-field sandbox-score"><label htmlFor={`scratch-score-${row.id}`}>คะแนน / 100</label><input id={`scratch-score-${row.id}`} type="number" min="0" max="100" step="0.01" inputMode="decimal" value={row.score} placeholder="85" onChange={e=>onChangeDraft(row.id,'score',e.target.value)}/></div>
+            <div className="sandbox-grade"><span className="sandbox-grade-label">เกรด</span>{detail?.complete ? <span className={'grade-chip ' + (detail.letter === 'F' ? 'grade-f' : '')}>{detail.letter}</span> : <span className="sandbox-pending">—</span>}</div>
+            <button type="button" className="sandbox-remove" title={`ลบวิชาที่ ${index+1}`} aria-label={`ลบวิชาที่ ${index+1}`} onClick={()=>onRemoveDraftRow(row.id)}><Trash2 size={17}/></button>
+          </div>;
+        })}
+      </div>
+      <button type="button" className="btn btn-outline sandbox-add" onClick={onAddDraftRow}><Plus size={18}/>เพิ่มวิชา</button>
+      <div className="sandbox-result" aria-live="polite">
+        <div><span className="sandbox-result-title">GPA จากวิชาที่กรอกครบ</span><strong>{gradeFormat(draftResult.gpa)}<small> / 4.00</small></strong></div>
+        <div className="sandbox-result-meta"><span>คำนวณแล้ว {draftResult.included} วิชา</span><span>{numberFormat(draftResult.totalCredits)} หน่วยกิต</span></div>
+      </div>
+      <p className="sandbox-hint">ใช้เกณฑ์มาตรฐาน GradeHub: A ตั้งแต่ 80, B+ 75, B 70, C+ 65, C 60, D+ 55, D 50, F ต่ำกว่า 50 คะแนน · แถวที่กรอกไม่ครบหรือคะแนนไม่อยู่ในช่วง 0–100 จะไม่ถูกคิด GPA</p>
+      <div className="sandbox-bottom-actions"><span><ShieldCheck size={16}/>บันทึกอัตโนมัติ {data.calculatorDraft ? '· ข้อมูลจะอยู่จนกว่าจะล้าง' : '· เริ่มกรอกเพื่อบันทึก'}</span><button className="btn btn-outline sandbox-clear" type="button" onClick={onClearDraft}><Trash2 size={16}/>ล้างข้อมูล</button></div>
+    </section>
   </main>;
-}
-
-
-const GPA_DRAFT_KEY = 'gradehub.calculator.sandbox.v1';
-const GPA_DRAFT_GRADES = [
-  { min: 80, label: 'A', points: 4 },
-  { min: 75, label: 'B+', points: 3.5 },
-  { min: 70, label: 'B', points: 3 },
-  { min: 65, label: 'C+', points: 2.5 },
-  { min: 60, label: 'C', points: 2 },
-  { min: 55, label: 'D+', points: 1.5 },
-  { min: 50, label: 'D', points: 1 },
-  { min: 0, label: 'F', points: 0 },
-];
-const newDraftCourse = () => ({ id: uid(), name: '', credits: '3', score: '' });
-function getSavedDraftCourses() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(GPA_DRAFT_KEY));
-    if (Array.isArray(raw) && raw.length) {
-      return raw.filter(r => r && typeof r === 'object').map(r => ({
-        id: String(r.id || uid()), name: String(r.name || ''),
-        credits: String(r.credits ?? ''), score: String(r.score ?? ''),
-      }));
-    }
-  } catch {}
-  return [newDraftCourse()];
-}
-function CalculatorWorkspace({ data }) {
-  const [drafts, setDrafts] = useState(getSavedDraftCourses);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  useEffect(() => {
-    try { localStorage.setItem(GPA_DRAFT_KEY, JSON.stringify(drafts)); } catch (error) { console.error('Save calculator:', error); }
-  }, [drafts]);
-  const updateRow = (id, field, value) => {
-    setDrafts(old => old.map(r => r.id === id ? { ...r, [field]: value } : r));
-  };
-  const evaluated = drafts.map(row => {
-    const credits = Number(row.credits);
-    const score = Number(row.score);
-    const valid = row.name.trim() !== '' && row.credits !== '' && Number.isFinite(credits) && credits > 0 && credits <= 30 &&
-      row.score !== '' && Number.isFinite(score) && score >= 0 && score <= 100;
-    const grade = valid ? GPA_DRAFT_GRADES.find(item => score >= item.min) : null;
-    return { ...row, creditsNumber: credits, grade, valid };
-  });
-  const counted = evaluated.filter(row => row.valid);
-  const creditsTotal = counted.reduce((sum, row) => sum + row.creditsNumber, 0);
-  const weightedPoints = counted.reduce((sum, row) => sum + row.creditsNumber * row.grade.points, 0);
-  const gpa = creditsTotal ? weightedPoints / creditsTotal : null;
-  return <>
-    <Destination data={data}/>
-    <main className="page" style={{ paddingTop: 0 }}>
-      <section className="white-panel" style={{ padding: 'clamp(20px, 4vw, 36px)', marginBottom: 32 }}>
-        <div className="panel-title-row">
-          <div><div className="eyebrow">GPA CALCULATOR</div><h2>ทดลองคำนวณเกรดเฉลี่ยรายวิชา</h2>
-            <p>ใส่ชื่อวิชา หน่วยกิต และคะแนนเต็ม 100 เพื่อทดลองคำนวณ โดยไม่กระทบ Dashboard หรือ Courses</p></div>
-        </div>
-        <div style={{ display: 'grid', gap: 12, marginTop: 22 }}>
-          {evaluated.map((row, index) => <div key={row.id} className="white-panel" style={{ background: '#f7f9fd', padding: 16, border: '1px solid #e5e9f2', borderRadius: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(82px,1fr) minmax(85px,1fr) auto', gap: 10, alignItems: 'end' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}><label htmlFor={'draft-name-'+row.id}>วิชาที่ {index + 1}</label>
-                <input id={'draft-name-'+row.id} value={row.name} onChange={e=>updateRow(row.id,'name',e.target.value)} placeholder="ชื่อวิชา"/></div>
-              <div className="form-group" style={{ marginBottom: 0 }}><label htmlFor={'draft-credit-'+row.id}>หน่วยกิต</label>
-                <input id={'draft-credit-'+row.id} type="number" min="0.5" max="30" step="0.5" value={row.credits} onChange={e=>updateRow(row.id,'credits',e.target.value)} /></div>
-              <div className="form-group" style={{ marginBottom: 0 }}><label htmlFor={'draft-score-'+row.id}>คะแนน / 100</label>
-                <input id={'draft-score-'+row.id} type="number" min="0" max="100" step="any" value={row.score} onChange={e=>updateRow(row.id,'score',e.target.value)} placeholder="0–100"/></div>
-              <button className="btn btn-outline" type="button" title="ลบวิชาทดลอง" aria-label={'ลบวิชาที่ '+(index + 1)}
-                onClick={()=>setDrafts(old=>old.length>1 ? old.filter(r=>r.id!==row.id) : [newDraftCourse()])}><Trash2 size={18}/></button>
-            </div>
-            <p style={{ margin: '9px 0 0', color: row.valid ? '#257d57' : '#8b92a0', fontSize: 13 }}>
-              {row.valid ? 'เกรด '+row.grade.label+' ('+row.grade.points.toFixed(1)+' GPA)' : 'กรอกข้อมูลให้ครบจึงนำวิชานี้มาคำนวณ'}
-            </p>
-          </div>)}
-        </div>
-        <button className="btn btn-outline" type="button" style={{ marginTop: 16 }} onClick={()=>setDrafts(old=>[...old,newDraftCourse()])}>
-          <Plus size={18}/> เพิ่มวิชา
-        </button>
-        <div style={{ marginTop: 22, borderRadius: 14, padding: 20, background: '#f1f5ff', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div><div style={{ fontSize: 14, color: '#677287' }}>เกรดเฉลี่ยจากวิชาที่ทดลอง</div>
-            <strong style={{ color: '#304da6', fontSize: 34 }}>{gpa === null ? '—' : gpa.toFixed(2)} <small style={{ fontSize: 16 }}>/ 4.00</small></strong>
-            <div style={{ color: '#677287', fontSize: 13 }}>{counted.length} วิชา · {creditsTotal.toLocaleString('th-TH')} หน่วยกิต</div>
-          </div>
-          <button className="btn btn-outline" type="button" onClick={()=>setShowClearConfirm(true)}><Trash2 size={17}/>ล้างข้อมูล</button>
-        </div>
-        <p className="muted-help" style={{ marginTop: 12 }}>บันทึกอัตโนมัติในเบราว์เซอร์นี้ · การคำนวณทดลองไม่เปลี่ยน GPA จริง</p>
-      </section>
-    </main>
-    {showClearConfirm && <DeleteConfirmation message="ต้องการล้างข้อมูลวิชาทดลองทั้งหมดหรือไม่? คะแนนใน Courses จะไม่ถูกลบ" onCancel={()=>setShowClearConfirm(false)}
-      onConfirm={()=>{setDrafts([newDraftCourse()]);setShowClearConfirm(false);}}/>}
-  </>;
 }
 
 function Modal({ title, subtitle, onClose, children }) {
@@ -467,7 +414,7 @@ function SemesterEditor({ initial, existingTerms, defaultStatus = 'planned', onS
   const [status,setStatus]=useState(initial?.status ?? defaultStatus);
   const [error,setError]=useState('');
   const submit=e=>{e.preventDefault();if(existingTerms.includes(Number(term)) && Number(initial?.number)!==Number(term)){setError('เทอมนี้ถูกสร้างไว้แล้ว');return;} onSave({number:Number(term),status});};
-  return <Modal title={initial?'แก้ไขเทอม':'เพิ่มเทอม'} subtitle={`ปีที่ ${year} · กำหนดสถานะเพื่อใช้วางแผนอนาคต`} onClose={onClose}><form className="modal-form" onSubmit={submit}><div className="form-group"><label>เลือกเทอม</label><select value={term} onChange={e=>setTerm(e.target.value)}><option value="1">เทอม 1</option><option value="2">เทอม 2</option></select></div><div className="form-group"><label>สถานะเทอม</label><select value={status} onChange={e=>setStatus(e.target.value)}><option value="completed">เรียนจบแล้ว</option><option value="current">กำลังเรียน</option><option value="planned">วางแผนไว้ (อนาคต)</option></select><p className="muted-help">ระบบ Destination จะให้เลือกเฉพาะเทอมที่อยู่หลังเทอมที่เรียนจบหรือกำลังเรียน</p></div>{error&&<p className="form-warning">{error}</p>}<div className="modal-actions"><button className="btn btn-outline" type="button" onClick={onClose}>ยกเลิก</button><button className="btn btn-primary" type="submit"><Save size={18}/>บันทึกเทอม</button></div></form></Modal>;
+  return <Modal title={initial?'แก้ไขเทอม':'เพิ่มเทอม'} subtitle={`ปีที่ ${year} · กำหนดสถานะเพื่อใช้วางแผนอนาคต`} onClose={onClose}><form className="modal-form" onSubmit={submit}><div className="form-group"><label>เลือกเทอม</label><select value={term} onChange={e=>setTerm(e.target.value)}><option value="1">เทอม 1</option><option value="2">เทอม 2</option></select></div><div className="form-group"><label>สถานะเทอม</label><select value={status} onChange={e=>setStatus(e.target.value)}><option value="completed">เรียนจบแล้ว</option><option value="current">กำลังเรียน</option><option value="planned">วางแผนไว้ (อนาคต)</option></select><p className="muted-help">ระบบ Calculator จะให้เลือกเฉพาะเทอมที่อยู่หลังเทอมที่เรียนจบหรือกำลังเรียน</p></div>{error&&<p className="form-warning">{error}</p>}<div className="modal-actions"><button className="btn btn-outline" type="button" onClick={onClose}>ยกเลิก</button><button className="btn btn-primary" type="submit"><Save size={18}/>บันทึกเทอม</button></div></form></Modal>;
 }
 
 function CourseEditor({ initial, onSave, onClose }) {
@@ -528,28 +475,55 @@ function AssessmentEditor({ initial, course, prefillLabel = '', onSave, onClose 
 }
 
 export default function App() {
-  const [data, setData] = useState(loadData);
+  const [toast, setToast] = useState('');
+  const notify = React.useCallback(value => setToast(value), []);
+  const { data, setData, mode, user, syncStatus, loadError, choice, conflict, enterGuest, refresh, logout, resolveChoice, resolveConflict, authenticated, retryLoad } = useAccountSync(notify);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [recoverPassword, setRecoverPassword] = useState(false);
   const [page, setPage] = useState('dashboard');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [modal, setModal] = useState(null);
   const [deleteRequest, setDeleteRequest] = useState(null);
   const [splash, setSplash] = useState(true);
-  const [toast, setToast] = useState('');
   const fileRef = useRef(null);
 
   useEffect(() => { const timer=setTimeout(()=>setSplash(false),2000);return ()=>clearTimeout(timer); },[]);
-  useEffect(() => { try { saveData(data); } catch (error) { console.error(error); setToast('บันทึกไม่สำเร็จ: พื้นที่จัดเก็บอาจเต็มหรือถูกปิดกั้น'); } },[data]);
   useEffect(() => { if(!toast)return; const timer=setTimeout(()=>setToast(''),4000);return ()=>clearTimeout(timer); },[toast]);
   const change = fn => setData(prev=>{const next=clone(prev); fn(next); return next;});
+  const editCalculatorRow = (id, field, value) => change(d => {
+    if (!['name','credits','score'].includes(field)) return;
+    if (!d.calculatorDraft) d.calculatorDraft = {rows: []};
+    let row = d.calculatorDraft.rows.find(row => row.id === id);
+    if (!row && id === NEW_ROW_ID && d.calculatorDraft.rows.length === 0) {
+      row = emptyCalculatorRow(); d.calculatorDraft.rows.push(row);
+    }
+    if (row) row[field] = String(value);
+  });
+  const addCalculatorRow = () => change(d => {
+    if (!d.calculatorDraft) d.calculatorDraft = {rows: []};
+    if (!d.calculatorDraft.rows.length) d.calculatorDraft.rows.push(emptyCalculatorRow());
+    d.calculatorDraft.rows.push(emptyCalculatorRow(uid()));
+  });
+  const removeCalculatorRow = id => change(d => {
+    if (!d.calculatorDraft) d.calculatorDraft = {rows: []};
+    d.calculatorDraft.rows = d.calculatorDraft.rows.filter(row => row.id !== id);
+  });
+  const clearCalculatorDraft = () => confirmRemove('ต้องการล้างรายการทดลองคำนวณ GPA ทั้งหมดหรือไม่? ข้อมูลปี เทอม และรายวิชาจริงจะไม่ถูกลบ', d => { d.calculatorDraft = {rows: []}; });
   const toggleCourseFolder = (kind, id) => change(d => toggleFolder(d, kind, id));
   const goPage = name => {setSelectedCourse(null);setPage(name); window.scrollTo({top:0,behavior:'smooth'});};
   const selectCourse=(yearId,termId,courseId)=>{setSelectedCourse({yearId,termId,courseId});window.scrollTo(0,0);};
-  const notify = value => setToast(value);
   const closeModal = () => setModal(null);
+  useEffect(() => {
+    if (!supabase) return;
+    const { data: listener } = supabase.auth.onAuthStateChange(event => {
+      if (event === 'PASSWORD_RECOVERY') { setRecoverPassword(true); setAuthOpen(true); }
+    });
+    return () => listener?.subscription?.unsubscribe();
+  }, []);
   const openModal = (type, details={}) => setModal({ type, ...details });
   const confirmRemove = (message, action) => setDeleteRequest({ message, action });
   const completeRemove = () => { if(!deleteRequest) return; change(deleteRequest.action); setDeleteRequest(null); notify('ลบข้อมูลแล้ว'); };
-  const addSample=()=>{if(window.confirm('เพิ่มข้อมูลตัวอย่าง 4 วิชาเพื่อทดลองหน้าตา GradeHub หรือไม่?')){setData(makeSampleData());notify('เพิ่มข้อมูลตัวอย่างแล้ว สามารถแก้ไขหรือลบได้');}};
+  const addSample=()=>{if(window.confirm('เพิ่มข้อมูลตัวอย่าง 4 วิชาเพื่อทดลองหน้าตา GradeHub หรือไม่?')){setData(prev=>({...makeSampleData(), calculatorDraft: prev.calculatorDraft}));notify('เพิ่มข้อมูลตัวอย่างแล้ว สามารถแก้ไขหรือลบได้');}};
   const importBackup=async(event)=>{
     const file=event.target.files?.[0];if(!file)return;
     try { const parsed=JSON.parse(await file.text());if(!isValidData(parsed)){notify('ไฟล์ไม่ถูกต้องหรือไม่ใช่ข้อมูล GradeHub v1');return;}
@@ -559,8 +533,11 @@ export default function App() {
   const selected = selectedCourse ? byId(data,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId) : null;
 
   return <>
-    {splash ? <Splash/> : <>
-      <Header page={page} onPage={goPage} onExport={()=>{downloadBackup(data);notify('ดาวน์โหลดไฟล์สำรอง JSON แล้ว');}} onImport={()=>fileRef.current?.click()}/>
+    {splash ? <Splash/> : mode === 'boot' ? <div className="account-gateway"><div className="account-loading">กำลังตรวจสอบบัญชี GradeHub…</div></div> : mode === 'entry' ?
+      <AuthPanel onGuest={enterGuest} onAuthenticated={authenticated} initial="login"/> :
+      (mode === 'choose' || mode === 'recover') && choice ? <CloudChoice isRecovery={mode === 'recover'} cloudExists={Boolean(choice.remote)} onBackup={()=>downloadBackup(choice.local)} onCloud={()=>resolveChoice(false)} onGuest={()=>{ if (choice.remote && !window.confirm('การใช้ข้อมูลในเครื่องแทนบัญชีออนไลน์อาจเปลี่ยนคะแนนล่าสุด ยืนยันหรือไม่?')) return; resolveChoice(true); }} onLogout={logout}/> :
+      mode === 'error' ? <div className="account-gateway"><section className="account-card decision-card"><h1>ไม่สามารถโหลดข้อมูลบัญชีได้</h1><p className="account-intro">{loadError}</p><button className="btn btn-primary decision-btn" onClick={retryLoad}>ลองเชื่อมต่อใหม่</button><button className="btn btn-outline decision-btn" onClick={logout}>กลับไปใช้ Guest</button></section></div> : <>
+      <Header page={page} onPage={goPage} user={user} syncStatus={syncStatus} onLogin={()=>setAuthOpen(true)} onLogout={logout} onRefresh={refresh} onExport={()=>{downloadBackup(data);notify('ดาวน์โหลดไฟล์สำรอง JSON แล้ว');}} onImport={()=>fileRef.current?.click()}/>
       <input className="sr-only" ref={fileRef} type="file" accept="application/json,.json" onChange={importBackup}/>
       {page==='dashboard' && <Dashboard data={data} onCourses={()=>goPage('courses')} onSample={addSample}/>}
       {page==='courses' && (!selectedCourse || !selected?.course ? <Courses data={data}
@@ -590,9 +567,11 @@ export default function App() {
           onEditGroupStat={(exam,field,value)=>change(d=>{if(value!=='' && (!Number.isFinite(Number(value)) || Number(value)<0 || (field==='n' && !Number.isInteger(Number(value)))))return;const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);if(!course.groupStats) course.groupStats={midterm:{},final:{}};if(!course.groupStats[exam])course.groupStats[exam]={};course.groupStats[exam][field]=value;})}
           onAddBonus={()=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);if(!course.assessments.some(a=>a.type==='bonus')) course.assessments.push({id:uid(),type:'bonus',label:'Bonus',breakdown:'',earned:'',status:'green'});})}
           onEditBonus={(assessmentId,field,value)=>change(d=>{const {course}=byId(d,selectedCourse.yearId,selectedCourse.termId,selectedCourse.courseId);const bonus=course.assessments.find(a=>a.id===assessmentId&&a.type==='bonus');if(bonus&&field==='breakdown') bonus.breakdown=value;})}/>)}
-      {page==='destination' && <CalculatorWorkspace data={data}/>}
-      <footer className="footer"><span><GraduationCap size={17}/> GradeHub</span><span>by smartheart group · Calculator · ข้อมูลบันทึกบนเครื่องของคุณ</span></footer>
+      {page==='destination' && <Destination data={data} onChangeDraft={editCalculatorRow} onAddDraftRow={addCalculatorRow} onRemoveDraftRow={removeCalculatorRow} onClearDraft={clearCalculatorDraft}/>}
+      <footer className="footer"><span><GraduationCap size={17}/> GradeHub</span><span>by smartheart group · v1.8.0 · {mode === 'cloud' ? 'บัญชีออนไลน์ · มีสำเนาในเครื่อง' : 'Guest · ข้อมูลเก็บในเครื่องนี้'}</span></footer>
     </>}
+    {authOpen && <AuthPanel isOverlay initial={recoverPassword ? 'reset-password' : 'login'} recovery={recoverPassword} onGuest={()=>{setAuthOpen(false);setRecoverPassword(false);if(mode==='entry')enterGuest();}} onAuthenticated={account=>{ authenticated(account);setAuthOpen(false);setRecoverPassword(false); }} onClose={()=>{setAuthOpen(false);setRecoverPassword(false);}}/>}
+    {conflict && <CloudConflict onBackup={()=>downloadBackup(conflict.local)} onUseCloud={()=>resolveConflict(false)} onOverwrite={()=>{if(window.confirm('การทำเช่นนี้จะแทนที่ข้อมูลออนไลน์ล่าสุดด้วยข้อมูลเครื่องนี้ ยืนยันหรือไม่?'))resolveConflict(true);}} onLogout={logout}/>}
     {deleteRequest && <DeleteConfirmation message={deleteRequest.message} onCancel={()=>setDeleteRequest(null)} onConfirm={completeRemove}/>}
     {toast&&!splash&&<div role="status" className="toast"><CheckCircle2 size={18}/>{toast}<button aria-label="ปิด" onClick={()=>setToast('')}><X size={16}/></button></div>}
     {modal?.type==='year'&&<YearEditor key={modal.yearId??'new'} initial={data.years.find(y=>y.id===modal.yearId)} existingNumbers={data.years.map(y=>y.number)} onClose={closeModal} onSave={number=>{change(d=>{const old=d.years.find(y=>y.id===modal.yearId);if(old) old.number=number;else d.years.push(createYear(number));});closeModal();notify('บันทึกปีการศึกษาแล้ว');}}/>}
