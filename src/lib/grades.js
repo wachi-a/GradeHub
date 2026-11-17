@@ -1,4 +1,4 @@
-// GradeHub grading and projection rules. No UI dependency: easy to test and
+// Gradeculator grading and projection rules. No UI dependency: easy to test and
 // replace the persistence layer when the Android app is packaged.
 
 export const DEFAULT_SCALE = [
