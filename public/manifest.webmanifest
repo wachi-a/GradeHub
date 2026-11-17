@@ -7,7 +7,7 @@
   "start_url": "/GradeHub/",
   "scope": "/GradeHub/",
   "display": "standalone",
-  "background_color": "#f4f6f9",
+  "background_color": "#f8f8f8",
   "theme_color": "#304da6",
   "icons": [
     {
