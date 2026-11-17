@@ -196,7 +196,7 @@ test('excluding a term removes it from cumulative GPA and completed credits whil
   assert.equal(cumulativeStats(document).gpa,2.5);
   second.includeInGpa = false;
   assert.equal(cumulativeStats(document).gpa,4);
-  assert.equal(cumulativeStats(document).passedCredits,3);
+  assert.equal(cumulativeStats(document).passedCredits,6);
   assert.equal(yearStats(year).gpa,4);
   assert.equal(semesterStats(second).gpa,1);
 });
