@@ -5,7 +5,8 @@ import { cloudConfigured, supabase } from './lib/cloud.js';
 const errorText = error => {
   const message = String(error?.message || error || 'เกิดข้อผิดพลาด');
   if (/Invalid login credentials/i.test(message)) return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
-  if (/Email not confirmed/i.test(message)) return 'กรุณายืนยันอีเมลผ่านลิงก์ที่ได้รับก่อน';
+  if (/Email not confirmed/i.test(message)) return 'กรุณายืนยันอีเมลด้วยรหัส OTP ที่ได้รับก่อน';
+  if (/token has expired|token expired|invalid otp|otp expired|token is invalid|invalid token|email otp/i.test(message)) return 'รหัสยืนยันไม่ถูกต้องหรือหมดอายุ กรุณาตรวจรหัสหรือขอรหัสใหม่';
   if (/rate limit|too many requests/i.test(message)) return 'มีการใช้งานถี่เกินไป กรุณาลองใหม่ภายหลัง';
   if (/fetch|network/i.test(message)) return 'เชื่อมต่ออินเทอร์เน็ตไม่ได้';
   return message;
@@ -16,6 +17,8 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -30,7 +33,21 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
         const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirectTo } });
         if (error) throw error;
         if (data.session?.user) onAuthenticated(data.session.user);
-        else { setMessage('ส่งคำขอยืนยันบัญชีแล้ว กรุณาตรวจอีเมล (รวมโฟลเดอร์สแปม)'); setSuccess(true); }
+        else {
+          setPendingEmail(email.trim()); setOtp(''); setFormMode('verify-email');
+          setMessage('ส่งรหัสยืนยันไปทางอีเมลแล้ว กรุณาตรวจกล่องจดหมายและโฟลเดอร์สแปม');
+          setSuccess(true);
+        }
+      } else if (formMode === 'verify-email') {
+        if (!pendingEmail) throw new Error('ไม่พบอีเมลที่กำลังยืนยัน กรุณาสมัครสมาชิกใหม่');
+        if (!/^\\d{6,8}$/.test(otp)) throw new Error('กรุณากรอกรหัสตัวเลขจากอีเมลให้ครบ');
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: pendingEmail, token: otp, type: 'email',
+        });
+        if (error) throw error;
+        if (!data?.user) throw new Error('ยืนยันบัญชีไม่สำเร็จ กรุณาลองใหม่');
+        setOtp('');
+        onAuthenticated(data.user);
       } else if (formMode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
         if (error) throw error;
@@ -48,8 +65,22 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
     } catch (error) { setMessage(errorText(error)); setSuccess(false); }
     finally { setBusy(false); }
   };
-  const switchMode = next => { setFormMode(next); setMessage(''); setSuccess(false); };
-  const title = formMode === 'register' ? 'สร้างบัญชี GradeHub' : formMode === 'forgot' ? 'ลืมรหัสผ่าน?' : formMode === 'reset-password' ? 'ตั้งรหัสผ่านใหม่' : 'เข้าสู่ระบบ GradeHub';
+  const resendCode = async () => {
+    if (!cloudConfigured || !pendingEmail || busy) return;
+    setBusy(true); setMessage(''); setSuccess(false);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup', email: pendingEmail,
+        options: { emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
+      });
+      if (error) throw error;
+      setOtp(''); setMessage('ส่งรหัสยืนยันใหม่แล้ว กรุณาใช้รหัสล่าสุดในอีเมล');
+      setSuccess(true);
+    } catch (error) { setMessage(errorText(error)); setSuccess(false); }
+    finally { setBusy(false); }
+  };
+  const switchMode = next => { setFormMode(next); setMessage(''); setSuccess(false); setOtp(''); };
+  const title = formMode === 'register' ? 'สร้างบัญชี GradeHub' : formMode === 'verify-email' ? 'ยืนยันอีเมลด้วยรหัส OTP' : formMode === 'forgot' ? 'ลืมรหัสผ่าน?' : formMode === 'reset-password' ? 'ตั้งรหัสผ่านใหม่' : 'เข้าสู่ระบบ GradeHub';
   return <div className={isOverlay ? 'account-modal-backdrop' : 'account-gateway'}>
     <section className="account-card" role={isOverlay ? 'dialog' : 'main'} aria-modal={isOverlay ? 'true' : undefined} aria-label={title}>
       {isOverlay && <button type="button" aria-label="ปิด" className="account-close" onClick={onClose}><X size={19}/></button>}
@@ -59,7 +90,12 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
       <p className="account-intro">ล็อกอินเพื่อซิงก์ข้อมูลรายวิชาและคะแนนระหว่างเว็บไซต์กับโทรศัพท์ หรือใช้งานแบบ Guest โดยเก็บข้อมูลไว้ในเครื่อง</p>
       {!cloudConfigured ? <div className="account-setup-warning"><CloudOff size={20}/><span>ยังไม่ได้เชื่อมต่อฐานข้อมูลออนไลน์ กรุณาตั้งค่า Supabase ตามคู่มือ SETUP_LOGIN.md ก่อน จึงจะสมัครสมาชิกและเข้าสู่ระบบได้</span></div> :
         <form onSubmit={handleSubmit} className="account-form">
-          {formMode !== 'reset-password' && <label>อีเมล<input type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>}
+          {formMode !== 'reset-password' && formMode !== 'verify-email' && <label>อีเมล<input type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>}
+          {formMode === 'verify-email' && <>
+            <p className="account-intro">กรอกรหัสที่ส่งไปยัง <strong>{pendingEmail}</strong> ในหน้านี้ได้เลย ไม่ต้องเปิดลิงก์ยืนยันในแท็บใหม่</p>
+            <label>รหัส OTP จากอีเมล<input type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" minLength={6} maxLength={8} required
+              placeholder="กรอกรหัสตัวเลข" value={otp} onChange={e=>setOtp(e.target.value.replace(/\\D/g,'').slice(0,8))}/></label>
+          </>}
           {(formMode === 'login' || formMode === 'register') && <label>รหัสผ่าน
             <div className="password-row"><input type={showPassword ? 'text' : 'password'} autoComplete={formMode === 'register' ? 'new-password' : 'current-password'} minLength={formMode === 'register' ? 8 : undefined} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={formMode === 'register' ? 'อย่างน้อย 8 ตัวอักษร' : 'รหัสผ่าน'}/><button type="button" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>
           </label>}
@@ -67,10 +103,11 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
           {message && <p className={success ? 'account-message success' : 'account-message error'} role="status">{message}</p>}
           <button className="btn btn-primary account-submit" type="submit" disabled={busy}>
             {busy ? <RefreshCw size={17} className="spin-icon"/> : <LogIn size={17}/>}
-            {formMode === 'register' ? 'สมัครสมาชิก' : formMode === 'forgot' ? 'ส่งลิงก์ตั้งรหัสผ่านใหม่' : formMode === 'reset-password' ? 'เปลี่ยนรหัสผ่าน' : 'เข้าสู่ระบบ'}
+            {formMode === 'register' ? 'สมัครสมาชิก' : formMode === 'verify-email' ? 'ยืนยันรหัส OTP' : formMode === 'forgot' ? 'ส่งลิงก์ตั้งรหัสผ่านใหม่' : formMode === 'reset-password' ? 'เปลี่ยนรหัสผ่าน' : 'เข้าสู่ระบบ'}
           </button>
           <div className="account-switch">
             {formMode !== 'login' && <button type="button" onClick={()=>switchMode('login')}><ArrowLeft size={14}/>กลับไปเข้าสู่ระบบ</button>}
+            {formMode === 'verify-email' && <button type="button" disabled={busy} onClick={resendCode}><RefreshCw size={14}/>ส่งรหัสอีกครั้ง</button>}
             {formMode === 'login' && <><button type="button" onClick={()=>switchMode('register')}>สมัครสมาชิก</button><button type="button" onClick={()=>switchMode('forgot')}>ลืมรหัสผ่าน</button></>}
           </div>
         </form>}
