@@ -16,7 +16,7 @@ if not exist "node_modules\" (
         exit /b 1
     )
 )
-echo Starting GradeHub...
+echo Starting Gradeculator...
 echo Open the address shown below (usually http://127.0.0.1:5173/).
 call npm run dev
 pause
