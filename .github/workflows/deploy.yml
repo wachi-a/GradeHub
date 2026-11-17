@@ -1,4 +1,4 @@
-name: Deploy GradeHub
+name: Deploy Gradeculator
 on:
   push:
     branches: [main]
@@ -23,7 +23,7 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Build GradeHub
+      - name: Build Gradeculator
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
