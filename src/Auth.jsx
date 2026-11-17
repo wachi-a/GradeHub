@@ -23,6 +23,17 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
+  // Start login fields empty each time the panel is mounted. Avoid silent
+  // browser autofill until the user actively focuses each field.
+  const [loginEmailUnlocked, setLoginEmailUnlocked] = useState(false);
+  const [loginPasswordUnlocked, setLoginPasswordUnlocked] = useState(false);
+  const clearCredentials = () => {
+    setEmail(''); setPassword(''); setNewPassword(''); setOtp('');
+    setPendingEmail(''); setShowPassword(false);
+    setLoginEmailUnlocked(false); setLoginPasswordUnlocked(false);
+  };
+  const closePanel = () => { clearCredentials(); onClose?.(); };
+  const continueAsGuest = () => { clearCredentials(); onGuest?.(); };
   const handleSubmit = async event => {
     event.preventDefault();
     if (!cloudConfigured) return;
@@ -32,7 +43,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
       if (formMode === 'register') {
         const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirectTo } });
         if (error) throw error;
-        if (data.session?.user) onAuthenticated(data.session.user);
+        if (data.session?.user) { clearCredentials(); onAuthenticated(data.session.user); }
         else {
           setPendingEmail(email.trim()); setOtp(''); setFormMode('verify-email');
           setMessage('ส่งรหัสยืนยันไปทางอีเมลแล้ว กรุณาตรวจกล่องจดหมายและโฟลเดอร์สแปม');
@@ -47,7 +58,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
         if (error) throw error;
         if (!data?.user) throw new Error('ยืนยันบัญชีไม่สำเร็จ กรุณาลองใหม่');
         setOtp('');
-        onAuthenticated(data.user);
+        clearCredentials(); onAuthenticated(data.user);
       } else if (formMode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
         if (error) throw error;
@@ -60,7 +71,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        if (data.user) onAuthenticated(data.user);
+        if (data.user) { clearCredentials(); onAuthenticated(data.user); }
       }
     } catch (error) { setMessage(errorText(error)); setSuccess(false); }
     finally { setBusy(false); }
@@ -95,25 +106,34 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
     } catch (error) { setMessage(errorText(error)); setSuccess(false); }
     finally { setBusy(false); }
   };
-  const switchMode = next => { setFormMode(next); setMessage(''); setSuccess(false); setOtp(''); };
+  const switchMode = next => {
+    clearCredentials(); setFormMode(next); setMessage(''); setSuccess(false);
+  };
   const title = formMode === 'register' ? 'สร้างบัญชี GradeHub' : formMode === 'verify-email' ? 'ยืนยันอีเมลด้วยรหัส OTP' : formMode === 'forgot' ? 'ลืมรหัสผ่าน?' : formMode === 'reset-password' ? 'ตั้งรหัสผ่านใหม่' : 'เข้าสู่ระบบ GradeHub';
   return <div className={isOverlay ? 'account-modal-backdrop' : 'account-gateway'}>
     <section className="account-card" role={isOverlay ? 'dialog' : 'main'} aria-modal={isOverlay ? 'true' : undefined} aria-label={title}>
-      {isOverlay && <button type="button" aria-label="ปิด" className="account-close" onClick={onClose}><X size={19}/></button>}
+      {isOverlay && <button type="button" aria-label="ปิด" className="account-close" onClick={closePanel}><X size={19}/></button>}
       <div className="account-badge"><GraduationCap size={29}/></div>
       <div className="eyebrow">GRADEHUB ACCOUNT</div>
       <h1>{title}</h1>
       <p className="account-intro">ล็อกอินเพื่อซิงก์ข้อมูลรายวิชาและคะแนนระหว่างเว็บไซต์กับโทรศัพท์ หรือใช้งานแบบ Guest โดยเก็บข้อมูลไว้ในเครื่อง</p>
       {!cloudConfigured ? <div className="account-setup-warning"><CloudOff size={20}/><span>ยังไม่ได้เชื่อมต่อฐานข้อมูลออนไลน์ กรุณาตั้งค่า Supabase ตามคู่มือ SETUP_LOGIN.md ก่อน จึงจะสมัครสมาชิกและเข้าสู่ระบบได้</span></div> :
-        <form onSubmit={handleSubmit} className="account-form">
-          {formMode !== 'reset-password' && formMode !== 'verify-email' && <label>อีเมล<input type="email" placeholder="you@example.com" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>}
+        <form onSubmit={handleSubmit} className="account-form" autoComplete="off">
+          {formMode !== 'reset-password' && formMode !== 'verify-email' && <label>อีเมล<input type="email" placeholder="you@example.com"
+              autoComplete={formMode === 'login' ? 'off' : 'email'}
+              readOnly={formMode === 'login' && !loginEmailUnlocked}
+              onFocus={() => setLoginEmailUnlocked(true)}
+              required value={email} onChange={e=>setEmail(e.target.value)}/></label>}
           {formMode === 'verify-email' && <>
             <p className="account-intro">กรอกรหัสที่ส่งไปยัง <strong>{pendingEmail}</strong> ในหน้านี้ได้เลย ไม่ต้องเปิดลิงก์ยืนยันในแท็บใหม่</p>
             <label>รหัส OTP จากอีเมล<input type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" minLength={6} maxLength={8} required
               placeholder="กรอกรหัสตัวเลข" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,'').slice(0,8))}/></label>
           </>}
           {(formMode === 'login' || formMode === 'register') && <label>รหัสผ่าน
-            <div className="password-row"><input type={showPassword ? 'text' : 'password'} autoComplete={formMode === 'register' ? 'new-password' : 'current-password'} minLength={formMode === 'register' ? 8 : undefined} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={formMode === 'register' ? 'อย่างน้อย 8 ตัวอักษร' : 'รหัสผ่าน'}/><button type="button" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>
+            <div className="password-row"><input type={showPassword ? 'text' : 'password'} autoComplete={formMode === 'register' ? 'new-password' : 'off'}
+              readOnly={formMode === 'login' && !loginPasswordUnlocked}
+              onFocus={() => setLoginPasswordUnlocked(true)}
+              minLength={formMode === 'register' ? 8 : undefined} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={formMode === 'register' ? 'อย่างน้อย 8 ตัวอักษร' : 'รหัสผ่าน'}/><button type="button" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>
           </label>}
           {formMode === 'reset-password' && <label>รหัสผ่านใหม่<input type="password" required minLength={8} autoComplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร" value={newPassword} onChange={e=>setNewPassword(e.target.value)}/></label>}
           {message && <p className={success ? 'account-message success' : 'account-message error'} role="status">{message}</p>}
@@ -132,10 +152,9 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
         <button type="button" className="account-google-signin" onClick={signInWithGoogle} disabled={busy}>
           <span className="account-google-mark" aria-hidden="true">G</span> เข้าสู่ระบบด้วย Google
         </button>
-        <p className="account-google-help">มีบัญชี GradeHub เดิมที่เก็บคะแนนไว้แล้ว? แนะนำให้เข้าสู่ระบบบัญชีเดิมก่อน แล้วกด “เชื่อม Google” เพื่อใช้ข้อมูลชุดเดิม</p>
       </>}
       <div className="account-divider"><span>หรือ</span></div>
-      <button type="button" className="btn btn-outline account-guest" onClick={onGuest}><UserRound size={18}/>ใช้งานแบบ Guest (ไม่ต้องเข้าสู่ระบบ)</button>
+      <button type="button" className="btn btn-outline account-guest" onClick={continueAsGuest}><UserRound size={18}/>Guest</button>
       <p className="account-footnote"><ShieldCheck size={15}/> ข้อมูล Guest จะอยู่ในเครื่องของเบราว์เซอร์นี้เท่านั้น และไม่ซิงก์ข้ามอุปกรณ์</p>
     </section>
   </div>;
