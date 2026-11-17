@@ -957,3 +957,13 @@ h1,h2,h3,p { margin-top: 0; }
   .stat-card { padding:11px 9px; }
   .stat-icon { width:28px; height:28px; }
 }
+
+/* Calculator details from the annotated reference: spacing and unified accent. */
+.sandbox-add { margin-top:18px; }
+.sandbox-grade .grade-chip:not(.grade-f) { background:#3454a8; color:#fff; border-color:#3454a8; box-shadow:none; }
+.sandbox-grade .grade-chip.grade-f { background:#e64a56; color:#fff; }
+@media (max-width:680px) {
+  .sandbox-add { margin-top:20px; width:100%; }
+  .sandbox-row .sandbox-name { min-width:0; }
+  .sandbox-row .sandbox-field input { font-size:13px; }
+}
