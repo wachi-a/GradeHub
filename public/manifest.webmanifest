@@ -1,7 +1,7 @@
 {
-  "name": "GradeHub — GPA Calculator & Course Manager",
-  "short_name": "GradeHub",
-  "description": "บันทึกคะแนน จัดการรายวิชา และคำนวณ GPA",
+  "name": "Gradeculator",
+  "short_name": "Gradeculator",
+  "description": "Gradeculator — บันทึกคะแนน จัดการรายวิชา และคำนวณ GPA",
   "lang": "th",
   "id": "/GradeHub/",
   "start_url": "/GradeHub/",
