@@ -1,17 +1,17 @@
-# GradeHub v1.7 — วิธีเปิด Login + Cloud Sync
+# Gradeculator v1.7 — วิธีเปิด Login + Cloud Sync
 
 โค้ดเวอร์ชันนี้มีระบบ Guest / Login แล้ว แต่ **ต้องเชื่อมต่อ Supabase Project ของตัวเองก่อน จึงจะล็อกอินและซิงก์ข้อมูลได้จริง**. GitHub Pages ให้บริการหน้าเว็บเท่านั้น ไม่ใช่ฐานข้อมูลออนไลน์
 
 ## A. สำรองข้อมูลเดิมก่อน
 
-1. เปิด GradeHub v1.6.2 ในเบราว์เซอร์ที่มีคะแนนอยู่
+1. เปิด Gradeculator v1.6.2 ในเบราว์เซอร์ที่มีคะแนนอยู่
 2. กดไอคอนดาวน์โหลด JSON เพื่อสำรองคะแนน
 3. เก็บ JSON ไว้นอกโฟลเดอร์ที่อัปโหลดขึ้น GitHub และไม่ส่งไฟล์คะแนนส่วนตัวเข้าที่เก็บโค้ดแบบ Public
 
 ## B. สร้าง Supabase Project
 
 1. ไปที่ https://supabase.com/ และลงชื่อเข้าใช้ตามข้อกำหนดของบริการ
-2. สร้าง Project ใหม่ เช่น `GradeHub`; ตั้งรหัสผ่านฐานข้อมูลที่ปลอดภัยและเก็บไว้เป็นส่วนตัว
+2. สร้าง Project ใหม่ เช่น `Gradeculator`; ตั้งรหัสผ่านฐานข้อมูลที่ปลอดภัยและเก็บไว้เป็นส่วนตัว
 3. ไปที่ **SQL Editor** แล้วเปิดไฟล์ `supabase/schema.sql` ใน ZIP นี้ คัดลอก SQL ทั้งหมดไปรันครั้งเดียว เพื่อสร้างตาราง `public.gradehub_documents` และ RLS
 4. ตรวจที่ Database > Tables ว่า `gradehub_documents` มี RLS เปิดอยู่
 5. ไปที่ **Authentication > Providers > Email** เปิด Email provider และเลือก Require email confirmation ตามที่ต้องการ (แนะนำให้เปิด)
@@ -54,7 +54,7 @@
    - `VITE_SUPABASE_URL` = URL ของ Supabase Project
    - `VITE_SUPABASE_PUBLISHABLE_KEY` = Supabase publishable key
 4. ไปที่ **Settings > Pages > Build and deployment** เลือก `GitHub Actions`
-5. ไปแท็บ **Actions > Deploy GradeHub > Run workflow > main > Run workflow** หรือ push commit ใหม่
+5. ไปแท็บ **Actions > Deploy Gradeculator > Run workflow > main > Run workflow** หรือ push commit ใหม่
 6. เมื่อ Workflow สำเร็จ เปิด https://wachi-a.github.io/GradeHub/ และทดสอบใหม่
 
 > กรอกตัวแปรของ Supabase ใน GitHub ไม่ได้ทำให้ข้อมูลคะแนนไปอยู่ใน GitHub; คะแนนอยู่ในตาราง Supabase ที่มี RLS ส่วน GitHub ยังโฮสต์แค่ไฟล์เว็บ
@@ -88,21 +88,21 @@
 
 ## G. ยืนยันบัญชีด้วย OTP ในแท็บเดิม
 
-เมื่อสมัครสมาชิก GradeHub จะเปิดหน้ากรอกรหัส OTP และสามารถกด **ส่งรหัสอีกครั้ง** ได้ หากต้องการใช้รหัสแทนลิงก์ยืนยัน ต้องตั้งค่า Supabase ให้ส่งรหัสในอีเมลด้วย:
+เมื่อสมัครสมาชิก Gradeculator จะเปิดหน้ากรอกรหัส OTP และสามารถกด **ส่งรหัสอีกครั้ง** ได้ หากต้องการใช้รหัสแทนลิงก์ยืนยัน ต้องตั้งค่า Supabase ให้ส่งรหัสในอีเมลด้วย:
 
 1. Supabase Dashboard → **Authentication → Email Templates → Confirm signup**
-2. แก้ **Subject** เป็น `GradeHub - รหัสยืนยันอีเมล`
+2. แก้ **Subject** เป็น `Gradeculator - รหัสยืนยันอีเมล`
 3. เปลี่ยนเนื้อหา **Body** เป็น HTML ด้านล่างแล้วกด Save (ใช้ `{{ .Token }}` ตามตัวพิมพ์และเว้นวรรคให้ตรง):
 
 ```html
-<h2>ยืนยันอีเมล GradeHub</h2>
-<p>กรอกรหัสนี้ในหน้า GradeHub ที่เปิดค้างไว้:</p>
+<h2>ยืนยันอีเมล Gradeculator</h2>
+<p>กรอกรหัสนี้ในหน้า Gradeculator ที่เปิดค้างไว้:</p>
 <h1 style="font-size:32px;letter-spacing:6px">{{ .Token }}</h1>
-<p>หากไม่ได้สมัคร GradeHub สามารถเพิกเฉยต่อข้อความนี้ได้</p>
+<p>หากไม่ได้สมัคร Gradeculator สามารถเพิกเฉยต่อข้อความนี้ได้</p>
 ```
 
-4. เปิด GradeHub ที่ `https://wachi-a.github.io/GradeHub/` → สมัครสมาชิกด้วยอีเมลใหม่
-5. เปิดอีเมลอ่านรหัสและกลับไปแท็บ GradeHub เดิม → กรอกรหัส → กด **ยืนยันรหัส OTP**
+4. เปิด Gradeculator ที่ `https://wachi-a.github.io/GradeHub/` → สมัครสมาชิกด้วยอีเมลใหม่
+5. เปิดอีเมลอ่านรหัสและกลับไปแท็บ Gradeculator เดิม → กรอกรหัส → กด **ยืนยันรหัส OTP**
 6. เมื่อยืนยันสำเร็จ ระบบ Login/Cloud Sync เดิมจะเริ่มทำงาน และย้าย Guest อัตโนมัติตามขั้นตอน E
 
 **หมายเหตุ:** การเปลี่ยนหน้า HTML ใน GitHub เพียงอย่างเดียวไม่เปลี่ยนเทมเพลตอีเมลของ Supabase ต้องตั้งค่าใน Dashboard ด้วย ไม่จำเป็นต้องสร้างฐานข้อมูลใหม่หรือแก้ SQL ส่วนลืมรหัสผ่านยังใช้ลิงก์เดิม หากไม่มีอีเมลใหม่/อีเมลไม่มาถึง ให้ดู Rate Limits และข้อจำกัดการส่งเมลของ Supabase
