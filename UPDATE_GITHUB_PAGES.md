@@ -1,20 +1,20 @@
-# อัปเดต GradeHub v1.8 บน GitHub Pages
+# อัปเดต Gradeculator v1.8 บน GitHub Pages
 
 ใช้ Repository: `https://github.com/wachi-a/GradeHub` (Branch `main`)
 
 ## ก่อนอัปเดต
 
-1. เปิดเว็บไซต์ GradeHub เดิมใน Chrome ปกติ แล้วกด **Export JSON** สำรองเกรดไว้ในเครื่องก่อน
+1. เปิดเว็บไซต์ Gradeculator เดิมใน Chrome ปกติ แล้วกด **Export JSON** สำรองเกรดไว้ในเครื่องก่อน
 2. ถ้าตั้งค่า Login/Supabase ไว้แล้ว ควรตรวจว่าไม่มีข้อความซิงก์ค้างหรือ Offline ก่อนเปลี่ยนเวอร์ชัน
 3. อย่าอัปโหลดไฟล์ JSON คะแนนส่วนตัว, `.env`, รหัสลับ หรือ `node_modules` ขึ้น GitHub
 
 ## วิธีอัปเดต
 
-1. แตกไฟล์ `GradeHub-Mobile-v1.8-Calculator.zip`
-2. เข้าโฟลเดอร์ `GradeHub-Mobile` ภายใน ZIP
-3. นำไฟล์ใหม่เข้า Repository GitHub **ที่ระดับราก** โดยให้ `src` เป็นโฟลเดอร์ที่อยู่ข้าง `index.html` และ `package.json` (ไม่ซ้อน `GradeHub-Mobile` อีกชั้น)
+1. แตกไฟล์ `Gradeculator-Mobile-v1.8-Calculator.zip`
+2. เข้าโฟลเดอร์ `Gradeculator-Mobile` ภายใน ZIP
+3. นำไฟล์ใหม่เข้า Repository GitHub **ที่ระดับราก** โดยให้ `src` เป็นโฟลเดอร์ที่อยู่ข้าง `index.html` และ `package.json` (ไม่ซ้อน `Gradeculator-Mobile` อีกชั้น)
 4. ถ้าใช้อัปโหลดผ่านหน้าเว็บ GitHub ให้ `Add file > Upload files` แล้วลากเนื้อหาในโฟลเดอร์เข้ามา / Commit changes; หรือใช้ GitHub Desktop Push ได้
-5. ไปแท็บ **Actions** ดู `Deploy GradeHub` ให้ขึ้นเครื่องหมายถูกสีเขียว (ไฟล์ workflow มีอยู่แล้ว ไม่ต้องสร้างใหม่)
+5. ไปแท็บ **Actions** ดู `Deploy Gradeculator` ให้ขึ้นเครื่องหมายถูกสีเขียว (ไฟล์ workflow มีอยู่แล้ว ไม่ต้องสร้างใหม่)
 6. เปิด `https://wachi-a.github.io/GradeHub/` แล้วกด `Ctrl+Shift+R` ถ้าเห็น UI เก่าจากแคช
 7. ตรวจเมนูด้านบนว่าเป็น **Calculator** และที่ท้ายเว็บขึ้น `v1.8.0`
 
