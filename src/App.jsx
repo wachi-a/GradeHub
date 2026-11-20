@@ -39,7 +39,7 @@ const byId = (data, yid, sid, cid) => {
 };
 
 function GradeculatorMark() {
-  return <img className="gradeculator-logo" src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="Gradeculator" draggable="false"/>;
+  return <img className="gradeculator-logo" src={`${import.meta.env.BASE_URL}icons/logo-round.svg`} alt="Gradeculator" draggable="false"/>;
 }
 
 function Brand({ onClick }) {
@@ -76,7 +76,7 @@ function Header({ page, onPage, onExport, onImport, user, syncStatus, onLogin, o
 function Splash() {
   return <div className="splash" role="status" aria-label="กำลังเปิด Gradeculator">
     <div className="splash-content">
-      <span className="splash-brand-mark"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-splash-logo.png`} alt="Gradeculator" /></span>
+      <span className="splash-brand-mark"><img src={`${import.meta.env.BASE_URL}icons/logo-splash.svg`} alt="Gradeculator" /></span>
       <div className="splash-title">Welcome to <span>Gradeculator</span>.</div>
       <p>ให้เราช่วยคำนวณผลการเรียนของคุณ</p>
       <span className="splash-loader" aria-hidden="true"/>
