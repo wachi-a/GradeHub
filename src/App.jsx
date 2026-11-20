@@ -76,7 +76,7 @@ function Header({ page, onPage, onExport, onImport, user, syncStatus, onLogin, o
 function Splash() {
   return <div className="splash" role="status" aria-label="กำลังเปิด Gradeculator">
     <div className="splash-content">
-      <span className="splash-brand-mark"><GradeculatorMark/></span>
+      <span className="splash-brand-mark"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-splash-logo.png`} alt="Gradeculator" /></span>
       <div className="splash-title">Welcome to <span>Gradeculator</span>.</div>
       <p>ให้เราช่วยคำนวณผลการเรียนของคุณ</p>
       <span className="splash-loader" aria-hidden="true"/>
@@ -114,9 +114,9 @@ function Dashboard({ data, onCourses, onSample, onToggleTermGpa }) {
       <StatCard label="รายวิชาที่ผ่าน" value={summary.passed} detail={`จากทั้งหมด ${summary.total} วิชา`} icon={CheckCircle2} color="green"/>
       <StatCard label="รายวิชาที่ตก" value={summary.failed} detail={`จากทั้งหมด ${summary.total} วิชา`} icon={XCircle} color="red"/>
     </div>
-    <div className="dashboard-credits-progress" aria-label={`เรียนผ่านแล้ว ${numberFormat(summary.passedCredits)} จาก ${CREDIT_GOAL} หน่วยกิต`}>
-      <div className="credits-bar"><span style={{width: `${Math.min(100, (summary.passedCredits / CREDIT_GOAL) * 100)}%`}}/></div>
-      <div className="credits-progress"><strong>{numberFormat(summary.passedCredits)} / {CREDIT_GOAL}</strong><span>หน่วยกิตที่ผ่าน</span></div>
+    <div className="dashboard-credits-progress" aria-label={`เรียนผ่านแล้ว ${numberFormat(summary.graduationCredits)} จาก ${CREDIT_GOAL} หน่วยกิต`}>
+      <div className="credits-bar"><span style={{width: `${Math.min(100, (summary.graduationCredits / CREDIT_GOAL) * 100)}%`}}/></div>
+      <div className="credits-progress"><strong>{numberFormat(summary.graduationCredits)} / {CREDIT_GOAL}</strong><span>หน่วยกิตที่ผ่าน</span></div>
     </div>
     <div className="section-title section-space"><div><h2>GPA · เกรดเฉลี่ยรายเทอม</h2></div></div>
     {terms.length === 0 ? <EmptyState icon={FolderKanban} title="ยังไม่มีข้อมูลเทอม" detail="เริ่มต้นโดยเพิ่มปีการศึกษา เทอม และรายวิชาที่หน้า Courses" action="ไปเพิ่มรายวิชา" onAction={onCourses}/> :
@@ -194,7 +194,7 @@ function Courses({ data, onToggleYear, onToggleTerm, onAddYear, onEditYear, onDe
 
 function CourseDetail({ year, semester, course, onBack, onEditCourse, onAddAssessment, onEditAssessment, onRemoveAssessment, onEditEarned, onStatus, onReorderAssessment, onEditGroupStat, onEditBonus, onAddBonus, expandedExamStats, onToggleExamStats }) {
   const stats = evaluateCourse(course);
-  const allocatedPercent = course.maxScore > 0 ? Math.min(100, stats.totalAllocated / course.maxScore * 100) : 0;
+  const scoreProgressPercent = course.maxScore > 0 ? Math.min(100, Math.max(0, stats.earned / course.maxScore * 100)) : 0;
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
   const draggingRef = useRef(null);
@@ -239,7 +239,7 @@ function CourseDetail({ year, semester, course, onBack, onEditCourse, onAddAsses
             <button type="button" className="assessment-drag-handle" title="ลากเพื่อเปลี่ยนลำดับ (หรือใช้ปุ่มลูกศรบนแป้นพิมพ์)" aria-label={'ย้ายลำดับ ' + item.label} onPointerDown={event => onPointerStart(event,item.id)} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={cancelDrag} onKeyDown={event => { if(event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return; event.preventDefault(); const toIndex = index + (event.key === 'ArrowUp' ? -1 : 1); if(course.assessments[toIndex]) onReorderAssessment(item.id,course.assessments[toIndex].id); }}><GripVertical size={22}/></button>
             <div className="assessment-info">
               <strong>{item.label}</strong>
-              <span>{item.type === 'bonus' ? 'คะแนนพิเศษ · ไม่นับในคะแนนเต็ม' : `คะแนนเต็ม ${numberFormat(item.maxPoints)} คะแนน`}</span>
+              <span>{item.type === 'bonus' ? 'คะแนนพิเศษ' : `คะแนนเต็ม ${numberFormat(item.maxPoints)} คะแนน`}</span>
               {examKeyForAssessment(item) && <button
                 type="button"
                 className="exam-details-toggle"
@@ -252,11 +252,22 @@ function CourseDetail({ year, semester, course, onBack, onEditCourse, onAddAsses
               </button>}
             </div>
             {item.type === 'bonus' ? <div className="bonus-row-fields">
-              <label><span>รายละเอียดโบนัส</span><input type="text" maxLength={200} placeholder="เช่น +1+2" value={item.breakdown ?? ''} aria-label="รายละเอียดคะแนน Bonus" onChange={e => onEditBonus(item.id,'breakdown',e.target.value)}/></label>
-              <label><span>คะแนนที่ได้ (โบนัส)</span><input className={'score-input ' + ((item.earned === '' || item.earned == null) ? 'no-score' : item.status === 'red' ? 'red-score' : 'green-score')} type="number" min="0" step="any" inputMode="decimal" placeholder="เช่น 5" value={item.earned ?? ''} onChange={e => onEditEarned(item.id,e.target.value)}/></label>
+              <label className="bonus-description"><span>รายละเอียดโบนัส</span><input type="text" maxLength={200} placeholder="เช่น +1+2" value={item.breakdown ?? ''} aria-label="รายละเอียดคะแนน Bonus" onChange={e => onEditBonus(item.id,'breakdown',e.target.value)}/></label>
+              <label className="bonus-points"><span>คะแนนที่ได้ (นำไปคำนวณคะแนน)</span><input className={'score-input ' + ((item.earned === '' || item.earned == null) ? 'no-score' : item.status === 'red' ? 'red-score' : 'green-score')} type="number" min="0" step="any" inputMode="decimal" placeholder="เช่น 5" value={item.earned ?? ''} onChange={e => onEditEarned(item.id,e.target.value)}/></label>
             </div> : <div className="score-entry"><input className={'score-input ' + ((item.earned === '' || item.earned == null) ? 'no-score' : item.status === 'red' ? 'red-score' : 'green-score')} type="number" inputMode="decimal" min="0" max={item.maxPoints} step="any" value={item.earned ?? ''} placeholder="—" aria-label={'คะแนนที่ได้ ' + item.label} onChange={event => onEditEarned(item.id,event.target.value)}/><span className="score-divider">/ {numberFormat(item.maxPoints)}</span></div>}
-            <div className="score-flags"><button type="button" className={'flag-btn green ' + (item.status !== 'red' ? 'chosen' : '')} onClick={() => onStatus(item.id,'green')} title="แสดงคะแนนเป็นสีเขียว" aria-label="ทำคะแนนนี้เป็นสีเขียว"><CheckCircle2 size={22}/></button><button type="button" className={'flag-btn red ' + (item.status === 'red' ? 'chosen' : '')} onClick={() => onStatus(item.id,'red')} title="แสดงคะแนนเป็นสีแดง" aria-label="ทำคะแนนนี้เป็นสีแดง"><XCircle size={22}/></button></div>
-            <div className="assessment-actions">{item.type !== 'bonus' && <IconButton label="แก้ไขหัวข้อคะแนน" icon={Pencil} onClick={() => onEditAssessment(item.id)}/>}<IconButton label="ลบหัวข้อคะแนน" icon={Trash2} danger onClick={() => onRemoveAssessment(item.id)}/></div>
+            <div className="assessment-controls">
+              <div className="assessment-marker-wrap">
+                <span className="assessment-marker-label">ทำสัญลักษณ์กำกับคะแนน</span>
+                <div className="score-flags">
+                  <div className="assessment-control-item"><button type="button" className={'flag-btn green ' + (item.status !== 'red' ? 'chosen' : '')} onClick={() => onStatus(item.id,'green')} title="ประกาศ" aria-label="ประกาศ"><CheckCircle2 size={22}/></button><small>ประกาศ</small></div>
+                  <div className="assessment-control-item"><button type="button" className={'flag-btn red ' + (item.status === 'red' ? 'chosen' : '')} onClick={() => onStatus(item.id,'red')} title="คาดการณ์" aria-label="คาดการณ์"><XCircle size={22}/></button><small>คาดการณ์</small></div>
+                </div>
+              </div>
+              <div className="assessment-actions">
+                {item.type !== 'bonus' && <div className="assessment-control-item"><IconButton label="แก้ไขหัวข้อคะแนน" icon={Pencil} onClick={() => onEditAssessment(item.id)}/><small>แก้ไข</small></div>}
+                <div className="assessment-control-item"><IconButton label="ลบหัวข้อคะแนน" icon={Trash2} danger onClick={() => onRemoveAssessment(item.id)}/><small>ลบ</small></div>
+              </div>
+            </div>
             {examKeyForAssessment(item) &&
               <div className="assessment-inline-stats" id={`exam-stats-${item.id}`} hidden={!expandedExamStats.includes(item.id)} role="region" aria-label={`รายละเอียดการสอบ ${item.label}`}>
                 <span className="inline-stats-note">ข้อมูลสถิติของห้อง · ไม่บังคับกรอก และไม่ส่งผลต่อ GPA</span>
@@ -276,7 +287,7 @@ function CourseDetail({ year, semester, course, onBack, onEditCourse, onAddAsses
             <button key={label} type="button" className="quick-exam-btn" onClick={() => onAddAssessment(label)}><Plus size={15}/>{label}<span>ยังไม่เพิ่ม</span></button>)}
           {!course.assessments.some(a => a.type === 'bonus') && <button type="button" className="quick-exam-btn" onClick={onAddBonus}><Plus size={15}/>Bonus<span>เพิ่มคะแนนพิเศษ</span></button>}
         </div>
-        <div className="allocation-box"><div className="allocation-top"><span>การจัดสรรคะแนนเต็ม</span><strong>{numberFormat(stats.totalAllocated)} / {numberFormat(course.maxScore)}</strong></div><div className="progress-track"><span style={{ width: `${allocatedPercent}%` }}/></div>
+        <div className="allocation-box"><div className="allocation-top"><span>คะแนนที่ทำได้ / คะแนนเต็ม</span><strong>{numberFormat(stats.earned)} / {numberFormat(course.maxScore)}</strong></div><div className="progress-track"><span style={{ width: `${scoreProgressPercent}%` }}/></div>
           {stats.totalAllocated > Number(course.maxScore) ? <p className="form-warning"><CircleAlert size={16}/>คะแนนเต็มรวมเกินคะแนนเต็มรายวิชา กรุณาแก้ไข</p> : stats.totalAllocated < Number(course.maxScore) ? <p className="muted-help">ยังเหลือคะแนนเต็มให้จัดสรรอีก {numberFormat(course.maxScore-stats.totalAllocated)} คะแนน · เกรดอัตโนมัติจะยังไม่สรุป</p> : <p className="success-help"><CheckCircle2 size={15}/>จัดสรรคะแนนครบแล้ว {stats.allRecorded ? 'ข้อมูลครบ พร้อมสรุปเกรด' : 'รอกรอกคะแนนที่ยังไม่มีผล'}</p>}
         </div>
       </section>
