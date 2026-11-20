@@ -113,7 +113,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
   return <div className={isOverlay ? 'account-modal-backdrop' : 'account-gateway'}>
     <section className="account-card" role={isOverlay ? 'dialog' : 'main'} aria-modal={isOverlay ? 'true' : undefined} aria-label={title}>
       {isOverlay && <button type="button" aria-label="ปิด" className="account-close" onClick={closePanel}><X size={19}/></button>}
-      <div className="account-badge"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="" className="auth-brand-logo"/></div>
+      <div className="account-badge"><img src={`${import.meta.env.BASE_URL}icons/logo-round.svg`} alt="" className="auth-brand-logo"/></div>
       <div className="eyebrow">GRADEHUB ACCOUNT</div>
       <h1>{title}</h1>
       <p className="account-intro">ล็อกอินเพื่อซิงก์ข้อมูลรายวิชาและคะแนนระหว่างเว็บไซต์กับโทรศัพท์ หรือใช้งานแบบ Guest โดยเก็บข้อมูลไว้ในเครื่อง</p>
@@ -162,7 +162,7 @@ export function AuthPanel({ onGuest, onAuthenticated, onClose, initial = 'login'
 
 export function CloudChoice({ cloudExists, onCloud, onGuest, onLogout, onBackup, isRecovery = false }) {
   return <div className="account-gateway"><section className="account-card decision-card" role="main">
-    <div className="account-badge"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="" className="auth-brand-logo"/></div>
+    <div className="account-badge"><img src={`${import.meta.env.BASE_URL}icons/logo-round.svg`} alt="" className="auth-brand-logo"/></div>
     <div className="eyebrow">SYNC YOUR GRADEHUB</div>
     <h1>{isRecovery ? 'กู้คืนข้อมูลที่ยังไม่ได้ซิงก์' : 'เลือกข้อมูลที่ต้องการใช้'}</h1>
     <p className="account-intro">{isRecovery ? 'มีข้อมูลบัญชีที่แก้ไขค้างอยู่ในเครื่องนี้และยังไม่ถูกส่งขึ้นออนไลน์ กรุณาเลือกว่าจะใช้ข้อมูลออนไลน์ล่าสุด หรือใช้สำเนาในเครื่องนี้' : 'ในเครื่องนี้มีข้อมูล Guest อยู่แล้ว เลือกว่าจะใช้ข้อมูลบัญชีออนไลน์หรือย้ายข้อมูล Guest ขึ้นบัญชี (ข้อมูลเดิมในเครื่องยังอยู่)'}</p>
@@ -176,7 +176,7 @@ export function CloudChoice({ cloudExists, onCloud, onGuest, onLogout, onBackup,
 
 export function CloudConflict({ onUseCloud, onOverwrite, onLogout, onBackup }) {
   return <div className="account-modal-backdrop"><section className="account-card decision-card" role="dialog" aria-modal="true" aria-label="ข้อมูลออนไลน์เปลี่ยนจากอีกเครื่อง">
-    <div className="account-badge alert"><img src={`${import.meta.env.BASE_URL}icons/gradeculator-logo.png`} alt="" className="auth-brand-logo"/></div>
+    <div className="account-badge alert"><img src={`${import.meta.env.BASE_URL}icons/logo-round.svg`} alt="" className="auth-brand-logo"/></div>
     <h1>พบข้อมูลที่แก้ไขจากอีกอุปกรณ์</h1>
     <p className="account-intro">ระบบหยุดการซิงก์เพื่อป้องกันการเขียนทับคะแนนจากอีกเครื่อง ข้อมูลที่กำลังแก้บนเครื่องนี้ยังเก็บไว้เป็นสำเนาเฉพาะบัญชี</p>
     <button className="account-backup-btn" onClick={onBackup}>ดาวน์โหลดข้อมูลเครื่องนี้เป็น JSON ก่อนตัดสินใจ</button>
