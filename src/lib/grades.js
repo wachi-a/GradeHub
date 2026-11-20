@@ -149,13 +149,20 @@ export function cumulativeStats(data) {
   return {
     gpa: gradedCredits ? weighted / gradedCredits : null,
     gradedCredits,
-    passedCredits: terms.reduce((sum, {semester}) => sum + semester.courses.reduce((acc,c) => { const evaled=evaluateCourse(c); return acc + (evaled.isFinal && evaled.grade !== 'F' ? Number(c.credits) : 0); }, 0), 0),
-    credits: stats.reduce((sum, x) => sum + x.credits, 0),
+    // These are GPA overview totals: disabled semesters do not participate.
+    passedCredits: includedTerms.reduce((sum, {semester}) => sum + semester.courses.reduce((acc,c) => { const evaled=evaluateCourse(c); return acc + (evaled.isFinal && evaled.grade !== 'F' ? Number(c.credits) : 0); }, 0), 0),
+    credits: includedStats.reduce((sum, x) => sum + x.credits, 0),
     weighted,
-    passed: stats.reduce((sum, x) => sum + x.passed, 0),
-    failed: stats.reduce((sum, x) => sum + x.failed, 0),
-    pending: stats.reduce((sum, x) => sum + x.pending, 0),
-    total: stats.reduce((sum, x) => sum + x.total, 0),
+    passed: includedStats.reduce((sum, x) => sum + x.passed, 0),
+    failed: includedStats.reduce((sum, x) => sum + x.failed, 0),
+    pending: includedStats.reduce((sum, x) => sum + x.pending, 0),
+    total: includedStats.reduce((sum, x) => sum + x.total, 0),
+    // Degree progress is independent of GPA-display inclusion: the learner
+    // has still completed the credits of a semester excluded from GPA.
+    graduationCredits: terms.reduce((sum, {semester}) => sum + semester.courses.reduce((acc,c) => {
+      const result = evaluateCourse(c);
+      return acc + (result.isFinal && result.grade !== 'F' ? Number(c.credits) : 0);
+    }, 0), 0),
   };
 }
 
@@ -190,7 +197,7 @@ export function projectGoal(data, targetGpa, year, term, estimatedPerTerm = DEFA
   const pendingCurrentCredits = allSemesters(data).filter(t => t.order <= boundary).reduce((sum, { semester }) =>
     sum + (semester.courses ?? []).reduce((acc, c) => acc + (evaluateCourse(c).isFinal ? 0 : Number(c.credits)), 0), 0);
   // Failed credits affect GPA but do not count as credits earned toward graduation.
-  const gradeCapacity = Math.max(0, CREDIT_GOAL - overall.passedCredits);
+  const gradeCapacity = Math.max(0, CREDIT_GOAL - overall.graduationCredits);
   let expectedFuture = Math.min(pendingCurrentCredits, gradeCapacity);
   const schedule = [];
   for (let order = boundary + 1; order <= destinationOrder; order++) {
