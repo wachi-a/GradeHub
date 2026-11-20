@@ -1053,3 +1053,30 @@ h1,h2,h3,p { margin-top: 0; }
   .sandbox-grade .grade-chip { min-width:34px; }
   .sandbox-row .sandbox-field input { font-size:12px; }
 }
+
+
+/* Final visual alignment: Bonus edits only; standard exam action position remains separate. */
+.assessment-row .bonus-row-fields { grid-template-columns:minmax(0,1fr); }
+.assessment-row .bonus-row-fields .bonus-description { width:100%; }
+.assessment-row .bonus-row-fields .bonus-points { max-width:210px; }
+.assessment-marker-wrap { position:relative; padding-top:13px; }
+.assessment-marker-label { position:absolute; left:0; top:0; transform:scaleX(.44); transform-origin:left top; font-size:8px; white-space:nowrap; }
+@media (max-width:680px) {
+  .assessment-row:not(:has(.bonus-row-fields)) { grid-template-columns:17px minmax(90px,1fr) auto; }
+  .assessment-row:not(:has(.bonus-row-fields)) .assessment-info { grid-column:2 / -1; grid-row:1; }
+  .assessment-row:not(:has(.bonus-row-fields)) .score-entry { grid-column:2; grid-row:2; min-width:105px; padding-inline:4px; justify-self:start; }
+  .assessment-row:not(:has(.bonus-row-fields)) .score-input { width:48px; font-size:15px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .score-divider { font-size:15px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .assessment-controls { grid-column:3; grid-row:2; justify-self:end; gap:3px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .assessment-control-item .small-icon-btn { width:23px;height:29px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .assessment-control-item .flag-btn { padding:2px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .assessment-control-item svg { width:16px; height:16px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .assessment-control-item small { font-size:7px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .score-flags,.assessment-row:not(:has(.bonus-row-fields)) .assessment-actions { gap:1px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .assessment-inline-stats { grid-column:1 / -1; grid-row:3; }
+}
+@media (max-width:380px) {
+  .assessment-row:not(:has(.bonus-row-fields)) .score-entry { min-width:92px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .score-input { width:39px;font-size:14px; }
+  .assessment-row:not(:has(.bonus-row-fields)) .score-divider { font-size:14px; }
+}
