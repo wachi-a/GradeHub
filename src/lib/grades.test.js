@@ -186,17 +186,29 @@ test('Inline grouped-exam stats keep original keys and never change GPA', async 
   assert.equal(evaluateCourse(course).points,3.5);
 });
 
-test('excluding a term removes it from cumulative GPA and completed credits while retaining its own GPA', () => {
+test('term inclusion switch excludes all aggregate GPA metrics but not degree progress', () => {
   const document = createEmptyData(), year = createYear(1);
   const first = createSemester(1,'completed'), second = createSemester(2,'completed');
   first.courses.push(createCourse({name:'First',credits:3,gradingMode:'manual',manualGrade:'A'}));
   second.courses.push(createCourse({name:'Second',credits:3,gradingMode:'manual',manualGrade:'D'}));
-  year.semesters.push(first,second); document.years.push(year);
+  second.courses.push(createCourse({name:'Failed',credits:3,gradingMode:'manual',manualGrade:'F'}));
+  year.semesters.push(first, second); document.years.push(year);
   assert.equal(first.includeInGpa,true);
-  assert.equal(cumulativeStats(document).gpa,2.5);
-  second.includeInGpa = false;
-  assert.equal(cumulativeStats(document).gpa,4);
-  assert.equal(cumulativeStats(document).passedCredits,6);
+  const initial=cumulativeStats(document);
+  assert.equal(initial.passedCredits,6);
+  assert.equal(initial.graduationCredits,6);
+  assert.equal(initial.passed,2);
+  assert.equal(initial.failed,1);
+  assert.equal(initial.total,3);
+  second.includeInGpa=false;
+  const summary=cumulativeStats(document);
+  assert.equal(summary.gpa,4);
+  assert.equal(summary.passedCredits,3);
+  assert.equal(summary.graduationCredits,6);
+  assert.equal(summary.passed,1);
+  assert.equal(summary.failed,0);
+  assert.equal(summary.total,1);
+  assert.equal(summary.credits,3);
   assert.equal(yearStats(year).gpa,4);
-  assert.equal(semesterStats(second).gpa,1);
+  assert.equal(semesterStats(second).gpa,0.5);
 });
