@@ -1080,3 +1080,34 @@ h1,h2,h3,p { margin-top: 0; }
   .assessment-row:not(:has(.bonus-row-fields)) .score-input { width:39px;font-size:14px; }
   .assessment-row:not(:has(.bonus-row-fields)) .score-divider { font-size:14px; }
 }
+
+
+/* Bonus rows: full-width description, then earned points beside Bonus actions. */
+.assessment-row:has(.bonus-row-fields) {
+  grid-template-columns:24px minmax(0,1fr) auto;
+  align-items:start;
+}
+.assessment-row:has(.bonus-row-fields) .assessment-info { grid-column:2 / -1; grid-row:1; }
+.assessment-row:has(.bonus-row-fields) .bonus-row-fields { display:contents; }
+.assessment-row:has(.bonus-row-fields) .bonus-description {
+  grid-column:2 / -1; grid-row:2; width:100%; min-width:0;
+}
+.assessment-row:has(.bonus-row-fields) .bonus-description input { display:block; width:100%; }
+.assessment-row:has(.bonus-row-fields) .bonus-points {
+  grid-column:2; grid-row:3; max-width:230px; min-width:0;
+}
+.assessment-row:has(.bonus-row-fields) .assessment-controls {
+  grid-column:3; grid-row:3; align-self:end; justify-self:end; gap:5px;
+}
+@media (max-width:680px) {
+  .assessment-row:has(.bonus-row-fields) { grid-template-columns:17px minmax(0,1fr) auto; gap:7px; }
+  .assessment-row:has(.bonus-row-fields) .assessment-info { grid-column:2 / -1; }
+  .assessment-row:has(.bonus-row-fields) .bonus-description { grid-column:2 / -1; grid-row:2; }
+  .assessment-row:has(.bonus-row-fields) .bonus-points { grid-column:2; grid-row:3; }
+  .assessment-row:has(.bonus-row-fields) .assessment-controls { grid-column:3; grid-row:3; gap:2px; }
+  .assessment-row:has(.bonus-row-fields) .assessment-control-item .small-icon-btn { width:23px; }
+  .assessment-row:has(.bonus-row-fields) .assessment-control-item small { font-size:7px; }
+  .assessment-row:has(.bonus-row-fields) .flag-btn { padding:2px; }
+  .assessment-row:has(.bonus-row-fields) .flag-btn svg { width:17px; height:17px; }
+  .assessment-row:has(.bonus-row-fields) .score-flags,.assessment-row:has(.bonus-row-fields) .assessment-actions { gap:1px; }
+}
