@@ -193,8 +193,9 @@ export function projectGoal(data, targetGpa, year, term, estimatedPerTerm = DEFA
   if (!Number.isInteger(destinationOrder) || ![1, 2].includes(Number(term)) || Number(year) < 1 || destinationOrder <= boundary) return { error: 'เลือกเทอมที่อยู่หลังเทอมปัจจุบันเท่านั้น' };
   if (!Number.isFinite(Number(estimatedPerTerm)) || Number(estimatedPerTerm) < 18 || Number(estimatedPerTerm) > 25) return { error: 'หน่วยกิตประมาณการต่อเทอมต้องอยู่ระหว่าง 18–25' };
   const overall = cumulativeStats(data);
-  const futureRegistered = allSemesters(data).filter(t => t.order > boundary && t.order <= destinationOrder);
-  const pendingCurrentCredits = allSemesters(data).filter(t => t.order <= boundary).reduce((sum, { semester }) =>
+  const includedTerms = allSemesters(data).filter(({ semester }) => semester.includeInGpa !== false);
+  const futureRegistered = includedTerms.filter(t => t.order > boundary && t.order <= destinationOrder);
+  const pendingCurrentCredits = includedTerms.filter(t => t.order <= boundary).reduce((sum, { semester }) =>
     sum + (semester.courses ?? []).reduce((acc, c) => acc + (evaluateCourse(c).isFinal ? 0 : Number(c.credits)), 0), 0);
   // Failed credits affect GPA but do not count as credits earned toward graduation.
   const gradeCapacity = Math.max(0, CREDIT_GOAL - overall.graduationCredits);
